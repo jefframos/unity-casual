@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: b21c79a0c467b754bb5e02561ec61c26
+timeCreated: 1520647879
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 2550
+  packageName: Cartoon crate collection
+  packageVersion: 2.0
+  assetPath: Assets/Cartoon_crate_collection/3dobjects/Materials/metal_crate_02-dynamic_metalkiste.mat
+  uploadId: 523948

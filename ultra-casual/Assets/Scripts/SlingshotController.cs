@@ -1,43 +1,41 @@
 using UnityEngine;
+using UnityEngine.Events;
 
-public class SlingshotController4Pt : MonoBehaviour
+[System.Serializable]
+public class TransformEvent : UnityEvent<Transform> { }
+
+[DisallowMultipleComponent]
+public class SlingshotController : MonoBehaviour, IGameController
 {
-    [Header("Poles / Band")]
-    public Transform leftPole;
-    public Transform rightPole;
-    [Tooltip("Max pull radius (meters) around the midpoint between the two poles, on the poles' height plane.")]
+    [Header("Refs")]
+    public SlingshotView view;                 // handles poles, plane math, bands
+    public MonoBehaviour slingshotableObject;  // must implement ISlingshotable
+
+    private ISlingshotable _target;
+
+    [Header("Distances")]
+    [Tooltip("Pull radius clamp in meters.")]
     public float maxPullDistance = 5f;
     public float minPullDistance = 1f;
 
-    [Header("Car")]
-    public Rigidbody carRigidbody;        // car rigidbody
-    public Transform carParent;           // the transform you move while aiming (often the car root)
-    public Transform carLeftAnchor;       // left hook on the car (child transform)
-    public Transform carRightAnchor;      // right hook on the car (child transform)
+    [Header("Angles")]
+    [Tooltip("Max yaw (left/right) from baseline forward while aiming & launching.")]
+    public float maxYawDegrees = 60f;
 
     [Header("Launch")]
     public float impulsePerMeter = 300f;  // impulse scale
     [Tooltip("Optional: reference forward to bias launch direction (e.g., ramp forward).")]
     public Transform rampForwardRef;
 
-    [Header("Orientation")]
-    public Vector3 upAxis = Vector3.up;   // world up (or ramp normal if you have it)
-    [Tooltip("Max yaw (left/right) from baseline forward while aiming & launching.")]
-    public float maxYawDegrees = 60f;
+    [Header("Cinemachine Events")]
+    public UnityEvent OnEnterSlingshotMode; // fired when aiming starts
+    public TransformEvent OnShotStarted;    // fired when launch happens (passes follow target)
 
-    [Header("Tuning")]
-    [Tooltip("If forward feels flipped for your pole layout, toggle this.")]
-    public bool flipBaselineForward = false;
-
-    [Header("Rendering (optional)")]
-    public LineRenderer leftBand;         // draws leftPole -> carLeftAnchor
-    public LineRenderer rightBand;        // draws rightPole -> carRightAnchor
-
-    private bool isDragging;
-    private bool isAiming;
-    private float polesPlaneY;
-    private Vector3 pullPoint;            // world-space point you drag to
-    private Vector3 lastClampedDir = Vector3.forward;
+    // State
+    private bool _isDragging;
+    private bool _isAiming;
+    private Vector3 _pullPoint;
+    private Vector3 _lastClampedDir = Vector3.forward;
 
     private void OnValidate()
     {
@@ -48,43 +46,14 @@ public class SlingshotController4Pt : MonoBehaviour
 
     private void Awake()
     {
-        if (!carRigidbody && carParent != null)
+        _target = slingshotableObject as ISlingshotable;
+        if (_target == null)
         {
-            carRigidbody = carParent.GetComponent<Rigidbody>();
+            Debug.LogError("[SlingshotController] slingshotableObject must implement ISlingshotable.");
         }
-
-        // Auto-create band renderers if not assigned
-        if (leftBand == null)
+        if (!view)
         {
-            var go = new GameObject("LeftBand");
-            go.transform.SetParent(transform, false);
-            leftBand = go.AddComponent<LineRenderer>();
-            leftBand.positionCount = 2;
-            leftBand.enabled = false;
-        }
-        else
-        {
-            leftBand.positionCount = 2;
-            leftBand.enabled = false;
-        }
-
-        if (rightBand == null)
-        {
-            var go = new GameObject("RightBand");
-            go.transform.SetParent(transform, false);
-            rightBand = go.AddComponent<LineRenderer>();
-            rightBand.positionCount = 2;
-            rightBand.enabled = false;
-        }
-        else
-        {
-            rightBand.positionCount = 2;
-            rightBand.enabled = false;
-        }
-
-        if (leftPole && rightPole)
-        {
-            polesPlaneY = 0.5f * (leftPole.position.y + rightPole.position.y);
+            Debug.LogError("[SlingshotController] Missing SlingshotView reference.");
         }
     }
 
@@ -95,240 +64,167 @@ public class SlingshotController4Pt : MonoBehaviour
 
     private void Update()
     {
+        if (_target == null || view == null) return;
+
         if (Input.GetMouseButtonDown(0))
         {
-            isDragging = true;
+            _isDragging = true;
             EnterAimingState();
-            EnableBands(true);
+            view.SetBandsVisible(true);
         }
 
-        if (Input.GetMouseButtonUp(0) && isDragging)
+        if (Input.GetMouseButtonUp(0) && _isDragging)
         {
-            isDragging = false;
-            EnableBands(false);
+            _isDragging = false;
+            view.SetBandsVisible(false);
             ExitAimingAndLaunch();
         }
 
-        if (!isDragging && !isAiming)
+        if (!_isDragging && !_isAiming)
         {
             return;
         }
 
-        // --- Update pull point on poles plane ---
-        Vector3 center = GetBandCenter();
-        Vector3 mouseWorld = GetMouseWorldOnPolesPlane();
+        // --- Pull compute ---
+        Vector3 center = view.GetBandCenter();
+        Vector3 mouseWorld = view.GetMouseWorldOnPolesPlane(Camera.main);
 
-        // Vector from center to mouse (projected to plane)
         Vector3 fromCenter = mouseWorld - center;
-        fromCenter = Vector3.ProjectOnPlane(fromCenter, upAxis);
+        fromCenter = Vector3.ProjectOnPlane(fromCenter, view.upAxis);
 
-        // Baseline forward on the same plane
-        Vector3 baselineFwd = GetPreferredForward(center);
-        baselineFwd = Vector3.ProjectOnPlane(baselineFwd, upAxis).normalized;
+        Vector3 baselineFwd = view.GetPreferredForward();
+        baselineFwd = Vector3.ProjectOnPlane(baselineFwd, view.upAxis).normalized;
 
-        // --- Allow only back/side pull relative to baseline forward ---
+        // Only back/side pull (forbid forward)
         float sForward = Vector3.Dot(fromCenter, baselineFwd);
         if (sForward > 0f)
         {
-            // Remove forward component; keep only back/side so you can’t pull forward
             fromCenter -= baselineFwd * sForward;
         }
 
-        // --- Clamp pull radius BETWEEN min and max during drag ---
+        // Clamp radius to [min, max]
         float mag = fromCenter.magnitude;
         float minR = Mathf.Clamp(minPullDistance, 0f, maxPullDistance);
         float maxR = Mathf.Max(0.01f, maxPullDistance);
 
-        Vector3 dir;
-        if (mag < 1e-6f)
-        {
-            // If direction is degenerate (e.g., clicked near center or forward-only),
-            // force a backward direction so min radius makes sense.
-            dir = -baselineFwd;
-        }
-        else
-        {
-            dir = fromCenter / mag;
-        }
-
+        Vector3 dir = mag < 1e-6f ? -baselineFwd : (fromCenter / Mathf.Max(mag, 1e-6f));
         float clampedR = Mathf.Clamp(mag, minR, maxR);
         fromCenter = dir * clampedR;
 
-        pullPoint = center + fromCenter;
+        _pullPoint = center + fromCenter;
 
-        // --- Move car so the MIDPOINT of the two car anchors sits at pullPoint ---
-        if (carParent != null && carLeftAnchor != null && carRightAnchor != null)
+        // --- Move the object: align anchors midpoint to pull point ---
+        if (_target.LeftAnchor && _target.RightAnchor && _target.Parent)
         {
-            Vector3 currentMid = (carLeftAnchor.position + carRightAnchor.position) * 0.5f;
-            Vector3 delta = pullPoint - currentMid;
-            carParent.position += delta;
+            Vector3 currentMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
+            Vector3 delta = _pullPoint - currentMid;
+            _target.Parent.position += delta;
         }
 
-        // --- Orient car with yaw clamp, store last clamped direction ---
-        lastClampedDir = AlignCarToLaunchDirection(center, pullPoint);
+        // --- Orient object with yaw clamp, store last clamped direction ---
+        _lastClampedDir = AlignToLaunchDirection(center, _pullPoint, baselineFwd);
 
-        // --- Draw each band: pole -> corresponding car anchor ---
-        if (leftPole && carLeftAnchor)
-        {
-            leftBand.SetPosition(0, leftPole.position);
-            leftBand.SetPosition(1, carLeftAnchor.position);
-        }
-
-        if (rightPole && carRightAnchor)
-        {
-            rightBand.SetPosition(0, rightPole.position);
-            rightBand.SetPosition(1, carRightAnchor.position);
-        }
+        // --- Draw bands ---
+        view.DrawBands(_target);
     }
 
-    // ----------------- Public API -----------------
-
-    // Snap the car to the rest position on the slingshot (no pull), anchors centered
     public void ResetToSlingshot()
     {
-        if (!leftPole || !rightPole || !carParent || !carLeftAnchor || !carRightAnchor)
+        if (_target == null || view == null || _target.LeftAnchor == null || _target.RightAnchor == null || _target.Parent == null)
         {
-            Debug.LogWarning("[SlingshotController4Pt] Missing references for ResetToSlingshot.");
+            Debug.LogWarning("[SlingshotController] Missing references for ResetToSlingshot.");
             return;
         }
 
-        polesPlaneY = 0.5f * (leftPole.position.y + rightPole.position.y);
+        Vector3 center = view.GetBandCenter();
+        _pullPoint = center;
 
-        Vector3 center = GetBandCenter();
-        pullPoint = center; // rest
+        Vector3 currentMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
+        _target.Parent.position += (center - currentMid);
 
-        // Center the car so the midpoint of anchors sits at center
-        Vector3 currentMid = (carLeftAnchor.position + carRightAnchor.position) * 0.5f;
-        carParent.position += (center - currentMid);
-
-        // Face a sensible forward
-        Vector3 forward = GetPreferredForward(center);
+        Vector3 forward = view.GetPreferredForward();
         if (forward.sqrMagnitude < 0.0001f)
         {
-            forward = carParent.forward;
+            forward = _target.Parent.forward;
         }
-        carParent.rotation = Quaternion.LookRotation(forward, upAxis);
-        lastClampedDir = forward;
+        _target.Parent.rotation = Quaternion.LookRotation(forward, view.upAxis);
+        _lastClampedDir = forward;
 
-        // Draw bands at rest
-        EnableBands(true);
-        leftBand.SetPosition(0, leftPole.position);
-        leftBand.SetPosition(1, carLeftAnchor.position);
-        rightBand.SetPosition(0, rightPole.position);
-        rightBand.SetPosition(1, carRightAnchor.position);
+        view.SetBandsVisible(true);
+        view.DrawBands(_target);
     }
-
-    // ----------------- Internals -----------------
 
     private void EnterAimingState()
     {
-        isAiming = true;
-
-        if (carRigidbody != null)
-        {
-            carRigidbody.isKinematic = true;
-            carRigidbody.useGravity = false;
-            carRigidbody.linearVelocity = Vector3.zero;
-            carRigidbody.angularVelocity = Vector3.zero;
-        }
+        _isAiming = true;
+        _target?.SetKinematic(true);
+        OnEnterSlingshotMode?.Invoke();
     }
 
     private void ExitAimingAndLaunch()
     {
-        isAiming = false;
+        _isAiming = false;
+        if (_target == null) return;
 
-        if (!carRigidbody)
-        {
-            return;
-        }
-
-        // Re-enable physics
-        carRigidbody.isKinematic = false;
-        carRigidbody.useGravity = true;
-
-        Vector3 center = GetBandCenter();
-
-        // Raw desired launch dir (snap back)
-        Vector3 rawDir = (center - pullPoint);
-        rawDir = Vector3.ProjectOnPlane(rawDir, upAxis);
-
-        if (rawDir.sqrMagnitude < 0.0001f)
-        {
-            return;
-        }
+        Vector3 center = view.GetBandCenter();
+        Vector3 rawDir = Vector3.ProjectOnPlane(center - _pullPoint, view.upAxis);
+        if (rawDir.sqrMagnitude < 0.0001f) return;
 
         rawDir.Normalize();
 
-        // Baseline forward
-        Vector3 baselineFwd = GetPreferredForward(center);
-        baselineFwd = Vector3.ProjectOnPlane(baselineFwd, upAxis).normalized;
+        Vector3 baselineFwd = view.GetPreferredForward();
+        baselineFwd = Vector3.ProjectOnPlane(baselineFwd, view.upAxis).normalized;
 
-        // Clamp yaw to limit launch angle
-        Vector3 clampedDir = ClampYawAroundUp(baselineFwd, rawDir, maxYawDegrees, upAxis);
+        // Yaw clamp
+        Vector3 clampedDir = ClampYawAroundUp(baselineFwd, rawDir, maxYawDegrees, view.upAxis);
 
-        // Optional: bias along ramp forward
+        // Optional bias along ramp forward
         if (rampForwardRef != null)
         {
-            Vector3 rampFwd = Vector3.ProjectOnPlane(rampForwardRef.forward, upAxis).normalized;
+            Vector3 rampFwd = Vector3.ProjectOnPlane(rampForwardRef.forward, view.upAxis).normalized;
             clampedDir = Vector3.Slerp(clampedDir, rampFwd, 0.25f).normalized;
         }
 
-        // Clamp the *launch power* to min/max pull too
-        float dist = Vector3.Distance(center, pullPoint);
+        float dist = Vector3.Distance(center, _pullPoint);
         float pullDistance = Mathf.Clamp(dist, Mathf.Clamp(minPullDistance, 0f, maxPullDistance), maxPullDistance);
         float impulse = pullDistance * impulsePerMeter;
 
-        // Clean & launch
-        carRigidbody.linearVelocity = Vector3.zero;
-        carRigidbody.angularVelocity = Vector3.zero;
-        carRigidbody.AddForce(clampedDir * impulse, ForceMode.Impulse);
+        // Tell the object to handle its own force application
+        _target.SetKinematic(false);
+        _target.Launch(clampedDir, impulse);
+
+        // Camera follow target
+        OnShotStarted?.Invoke(_target.FollowTarget ? _target.FollowTarget : _target.Parent);
     }
 
-    // Returns the clamped (used) forward dir
-    private Vector3 AlignCarToLaunchDirection(Vector3 center, Vector3 currentPull)
+    private Vector3 AlignToLaunchDirection(Vector3 center, Vector3 currentPull, Vector3 baselineFwd)
     {
-        if (!carParent)
-        {
-            return lastClampedDir;
-        }
+        if (_target?.Parent == null) return _lastClampedDir;
 
-        // Desired launch direction (from pull to center)
-        Vector3 desiredDir = center - currentPull;
-        desiredDir = Vector3.ProjectOnPlane(desiredDir, upAxis);
-
+        Vector3 desiredDir = Vector3.ProjectOnPlane(center - currentPull, view.upAxis);
         if (desiredDir.sqrMagnitude < 0.0001f)
         {
-            desiredDir = GetPreferredForward(center);
-            desiredDir = Vector3.ProjectOnPlane(desiredDir, upAxis);
+            desiredDir = Vector3.ProjectOnPlane(view.GetPreferredForward(), view.upAxis);
         }
-
         if (desiredDir.sqrMagnitude < 0.0001f)
         {
-            return lastClampedDir;
+            return _lastClampedDir;
         }
 
         desiredDir.Normalize();
+        baselineFwd = baselineFwd.sqrMagnitude > 0.0001f ? baselineFwd : view.GetPreferredForward();
 
-        // Baseline forward
-        Vector3 baselineFwd = GetPreferredForward(center);
-        baselineFwd = Vector3.ProjectOnPlane(baselineFwd, upAxis).normalized;
+        Vector3 clampedDir = ClampYawAroundUp(baselineFwd, desiredDir, maxYawDegrees, view.upAxis);
 
-        // Clamp yaw
-        Vector3 clampedDir = ClampYawAroundUp(baselineFwd, desiredDir, maxYawDegrees, upAxis);
-
-        // Apply rotation
-        Quaternion target = Quaternion.LookRotation(clampedDir, upAxis);
-        carParent.rotation = target;
+        Quaternion targetRot = Quaternion.LookRotation(clampedDir, view.upAxis);
+        _target.Parent.rotation = targetRot;
 
         return clampedDir;
     }
 
     private static Vector3 ClampYawAroundUp(Vector3 baselineFwd, Vector3 desiredDir, float maxYawDeg, Vector3 up)
     {
-        if (baselineFwd.sqrMagnitude < 0.0001f)
-        {
-            return desiredDir;
-        }
+        if (baselineFwd.sqrMagnitude < 0.0001f) return desiredDir;
 
         float angle = Vector3.SignedAngle(baselineFwd, desiredDir, up);
         float clamped = Mathf.Clamp(angle, -maxYawDeg, maxYawDeg);
@@ -336,65 +232,15 @@ public class SlingshotController4Pt : MonoBehaviour
         return (yawRot * baselineFwd).normalized;
     }
 
-    private Vector3 GetPreferredForward(Vector3 center)
+    // ---------------- IGameController ----------------
+    public void ResetGameState()
     {
-        if (!leftPole || !rightPole)
-        {
-            return Vector3.forward;
-        }
-
-        // Across the poles on the aiming plane
-        Vector3 across = rightPole.position - leftPole.position;
-        Vector3 side = Vector3.ProjectOnPlane(across, upAxis);
-
-        // Use Cross(side, upAxis) so forward points consistently "out" from the band
-        Vector3 forward = Vector3.Cross(side, upAxis).normalized;
-
-        if (flipBaselineForward)
-        {
-            forward = -forward;
-        }
-
-        if (rampForwardRef != null && forward.sqrMagnitude < 0.01f)
-        {
-            forward = Vector3.ProjectOnPlane(rampForwardRef.forward, upAxis).normalized;
-        }
-
-        return forward;
+        // Put the slingshot back to its ready state.
+        ResetToSlingshot();
     }
 
-    private void EnableBands(bool on)
+    public void EndGame()
     {
-        if (leftBand != null) leftBand.enabled = on;
-        if (rightBand != null) rightBand.enabled = on;
-    }
-
-    private Vector3 GetBandCenter()
-    {
-        if (!leftPole || !rightPole)
-        {
-            return transform.position;
-        }
-
-        return 0.5f * (leftPole.position + rightPole.position);
-    }
-
-    private Vector3 GetMouseWorldOnPolesPlane()
-    {
-        if (!leftPole || !rightPole)
-        {
-            return transform.position;
-        }
-
-        Vector3 planePoint = new Vector3(0f, polesPlaneY, 0f);
-        Plane plane = new Plane(upAxis.normalized, planePoint);
-        Ray ray = Camera.main != null ? Camera.main.ScreenPointToRay(Input.mousePosition) : new Ray(Vector3.zero, Vector3.forward);
-
-        if (plane.Raycast(ray, out float enter))
-        {
-            return ray.GetPoint(enter);
-        }
-
-        return GetBandCenter();
+        // Intentionally blank for now (disable input, play VFX, etc. later)
     }
 }
