@@ -33,7 +33,7 @@ public class SlingshotCinemachineBridge : MonoBehaviour
         if (slingshot != null)
         {
             slingshot.OnEnterSlingshotMode.AddListener(OnEnterSlingshotMode);
-            slingshot.OnShotStarted.AddListener(OnShotStarted);
+            slingshot.OnShotStarted += OnShotStarted;
         }
     }
 
@@ -42,7 +42,7 @@ public class SlingshotCinemachineBridge : MonoBehaviour
         if (slingshot != null)
         {
             slingshot.OnEnterSlingshotMode.RemoveListener(OnEnterSlingshotMode);
-            slingshot.OnShotStarted.RemoveListener(OnShotStarted);
+            slingshot.OnShotStarted -= OnShotStarted;
         }
     }
 

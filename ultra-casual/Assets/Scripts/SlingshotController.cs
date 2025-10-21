@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -7,6 +8,8 @@ public class TransformEvent : UnityEvent<Transform> { }
 [DisallowMultipleComponent]
 public class SlingshotController : MonoBehaviour, IGameController
 {
+
+
     [Header("Refs")]
     public SlingshotView view;                 // handles poles, plane math, bands
     public MonoBehaviour slingshotableObject;  // must implement ISlingshotable
@@ -29,7 +32,8 @@ public class SlingshotController : MonoBehaviour, IGameController
 
     [Header("Cinemachine Events")]
     public UnityEvent OnEnterSlingshotMode; // fired when aiming starts
-    public TransformEvent OnShotStarted;    // fired when launch happens (passes follow target)
+    public Action<Transform> OnShotStarted;    // fired when launch happens (passes follow target)
+    public Action<Transform> OnLaunchSarted;    // fired when launch happens (passes follow target)
 
     // State
     private bool _isDragging;
@@ -46,15 +50,30 @@ public class SlingshotController : MonoBehaviour, IGameController
 
     private void Awake()
     {
+    }
+
+    void OnEnable()
+    {
         _target = slingshotableObject as ISlingshotable;
         if (_target == null)
         {
             Debug.LogError("[SlingshotController] slingshotableObject must implement ISlingshotable.");
         }
+        else
+        {
+            _target.OnLaunchStart += LaunchStarted;
+        }
         if (!view)
         {
             Debug.LogError("[SlingshotController] Missing SlingshotView reference.");
         }
+
+    }
+
+    private void LaunchStarted()
+    {
+        OnLaunchSarted?.Invoke(_target.FollowTarget ? _target.FollowTarget : _target.Parent);
+
     }
 
     private void Start()
@@ -66,6 +85,10 @@ public class SlingshotController : MonoBehaviour, IGameController
     {
         if (_target == null || view == null) return;
 
+        if (_target.IsLaunching)
+        {
+            return;
+        }
         if (Input.GetMouseButtonDown(0))
         {
             _isDragging = true;
@@ -123,7 +146,7 @@ public class SlingshotController : MonoBehaviour, IGameController
 
         // --- Orient object with yaw clamp, store last clamped direction ---
         _lastClampedDir = AlignToLaunchDirection(center, _pullPoint, baselineFwd);
-
+        OnShotStarted?.Invoke(_target.FollowTarget ? _target.FollowTarget : _target.Parent);
         // --- Draw bands ---
         view.DrawBands(_target);
     }
@@ -194,7 +217,9 @@ public class SlingshotController : MonoBehaviour, IGameController
         _target.Launch(clampedDir, impulse);
 
         // Camera follow target
-        OnShotStarted?.Invoke(_target.FollowTarget ? _target.FollowTarget : _target.Parent);
+
+        var followT = _target.FollowTarget ? _target.FollowTarget : _target.Parent;
+        OnShotStarted?.Invoke(followT);         // <--- NEW: code event
     }
 
     private Vector3 AlignToLaunchDirection(Vector3 center, Vector3 currentPull, Vector3 baselineFwd)

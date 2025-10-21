@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -26,6 +27,8 @@ public class SlingshotCar : MonoBehaviour, ISlingshotable, IResettable
     [Tooltip("Solver iterations (position, velocity) for more stable impacts.")]
     public int solverIterations = 12;
     public int solverVelocityIterations = 12;
+
+    public event Action OnLaunchStart;
 
     private void Reset()
     {
@@ -89,6 +92,8 @@ public class SlingshotCar : MonoBehaviour, ISlingshotable, IResettable
     public Transform LeftAnchor => leftAnchor;
     public Transform RightAnchor => rightAnchor;
     public Transform FollowTarget => followTarget ? followTarget : parent;
+
+    public bool IsLaunching => throw new System.NotImplementedException();
 
     public void SetKinematic(bool isKinematic)
     {

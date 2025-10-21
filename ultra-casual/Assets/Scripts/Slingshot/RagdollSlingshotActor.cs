@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -18,10 +16,6 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
     public Transform rightAnchor;
     public Transform followTarget;
 
-    [Header("Timing")]
-    [Tooltip("Delay before enabling the ragdoll (seconds).")]
-    public float ragdollEnableDelay = 0.5f;
-
     [Header("Physics")]
     [Tooltip("Collision mode for launcher during the initial flight.")]
     public CollisionDetectionMode launcherCollisionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -37,11 +31,23 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
 
     // reset snapshot for the whole actor
     private Vector3 _startPos;
-    private Vector3 _laucherBodyStartPos;
+    private Vector3 _launcherBodyStartLocalPos;
     private Quaternion _startRot;
+    private bool _followLauncher;
+    private bool _hasSwitched;
 
-    // cancellation for in-flight switch
-    private CancellationTokenSource _switchCts;
+
+
+    public Transform Parent => parent;
+    public Transform LeftAnchor => leftAnchor;
+    public Transform RightAnchor => rightAnchor;
+    public Transform FollowTarget => followTarget != null ? followTarget : parent;
+
+    public bool IsLaunching => _isLaunching;
+
+    private bool _isLaunching = false;
+
+    public event Action OnLaunchStart;
 
     private void Reset()
     {
@@ -67,31 +73,40 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         if (launcherBody == null && launcherCollider != null)
         {
             launcherBody = launcherCollider.attachedRigidbody;
-            Debug.Log(launcherBody.transform.localPosition);
         }
-        if (launcherBody)
+        if (launcherBody != null)
         {
-            _laucherBodyStartPos = launcherBody.transform.localPosition;
+            _launcherBodyStartLocalPos = launcherBody.transform.localPosition;
         }
+
+        // Hook relay on the launcher collider so we can hear Starter triggers
+        AttachOrConfigureRelay();
 
         // Start in aiming state
         EnterAimingPose();
         EnableLauncher(false);
     }
-
-    private void OnDisable()
+    private void FixedUpdate()
     {
-        _switchCts?.Cancel();
-        _switchCts?.Dispose();
-        _switchCts = null;
+        // While we haven't switched, keep the character glued to the launcher
+        if (_followLauncher && !_hasSwitched && launcherBody != null)
+        {
+            rig.transform.localPosition = launcherBody.transform.localPosition;//(launcherBody.position, Quaternion.identity);
+        }
+    }
+    private void AttachOrConfigureRelay()
+    {
+        if (launcherCollider == null) return;
+
+        var relay = launcherCollider.GetComponent<LauncherTriggerRelay>();
+        if (relay == null)
+        {
+            relay = launcherCollider.gameObject.AddComponent<LauncherTriggerRelay>();
+        }
+        relay.Initialize(this);
     }
 
     // ---------------- ISlingshotable ----------------
-
-    public Transform Parent => parent;
-    public Transform LeftAnchor => leftAnchor;
-    public Transform RightAnchor => rightAnchor;
-    public Transform FollowTarget => followTarget != null ? followTarget : parent;
 
     public void SetKinematic(bool isKinematic)
     {
@@ -100,69 +115,19 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         {
             EnterAimingPose();
         }
-        else
-        {
-            // We keep the ragdoll kinematic until we launch; SetKinematic(false) here is a no-op
-            // because launch flow controls exact timing.
-        }
+        // Non-kinematic is controlled by Launch + switch
     }
 
     public void Launch(Vector3 direction, float impulse)
     {
-        // Fire-and-forget the async flow
-        LaunchRoutine(direction, impulse).Forget();
-    }
-
-    // ---------------- IResettable ----------------
-
-    public void ResetToInitial()
-    {
-        _switchCts?.Cancel();
-
-        // Freeze everything
-        if (rig != null)
-        {
-            rig.SetKinematic(true);
-            rig.ZeroVelocities();
-            rig.RestorePoseSnapshot();
-            rig.ResetMassProps();
-        }
-
-        // Reset transform
-        transform.SetPositionAndRotation(_startPos, _startRot);
-
-        // Reset launcher
-        if (launcherBody != null)
-        {
-            launcherBody.isKinematic = true;
-            launcherBody.useGravity = false;
-            launcherBody.linearVelocity = Vector3.zero;
-            launcherBody.angularVelocity = Vector3.zero;
-            launcherBody.transform.localPosition = _laucherBodyStartPos;
-            launcherBody.transform.rotation = Quaternion.identity;
-
-            EnableLauncher(false);
-        }
-
-        // Back to aim
-        EnterAimingPose();
-    }
-
-    // ---------------- Core flow ----------------
-
-    private async UniTaskVoid LaunchRoutine(Vector3 direction, float impulse)
-    {
         if (rig == null || launcherBody == null || launcherCollider == null)
         {
-            Debug.LogWarning("[DelayedRagdollSwitcher] Missing rig/launcher references.");
+            Debug.LogWarning("[RagdollSwitcher] Missing rig/launcher references.");
             return;
         }
 
-        _switchCts?.Cancel();
-        _switchCts?.Dispose();
-        _switchCts = new CancellationTokenSource();
-        var token = _switchCts.Token;
-
+        _hasSwitched = false;
+        _followLauncher = true;
         // 1) Prepare: animator OFF, ragdoll frozen (kinematic), launcher ON
         if (animator != null) animator.enabled = false;
 
@@ -185,27 +150,35 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         launcherBody.isKinematic = false;
         launcherBody.useGravity = true;
         launcherBody.AddForce(dir * impulse, ForceMode.VelocityChange);
+    }
 
-        // 3) Wait (fixed time) before switching to ragdoll
-        try
-        {
-            // Use FixedUpdate timing so the handoff happens between physics steps
-            await UniTask.Delay(TimeSpan.FromSeconds(Mathf.Max(0f, ragdollEnableDelay)),
-                                DelayType.DeltaTime,
-                                PlayerLoopTiming.FixedUpdate,
-                                token);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
+    // ---------------- External switch trigger ----------------
 
-        if (token.IsCancellationRequested) return;
+    /// <summary>
+    /// Called by LauncherTriggerRelay when the launcher enters a trigger tagged "Starter".
+    /// </summary>
+    public void OnLauncherHitStarterTrigger(Collider starterTrigger)
+    {
+        ForceSwitchToRagdoll();
+    }
 
-        // 4) Handoff to ragdoll: snap root to launcher, enable physics on all bodies,
-        //    and give them the launcher's current velocity/angVel.
-        transform.SetPositionAndRotation(launcherBody.position, launcherBody.rotation);
+    /// <summary>
+    /// Public API to switch immediately from launcher to ragdoll.
+    /// Safe to call once; no-ops if already switched or if references are missing.
+    /// </summary>
+    public void ForceSwitchToRagdoll()
+    {
+        if (_hasSwitched) return;
+        if (rig == null || launcherBody == null) return;
 
+
+        _hasSwitched = true;
+        _followLauncher = false;
+        // Snap root to launcher pose
+        rig.transform.localPosition = Vector3.zero;
+        transform.SetPositionAndRotation(launcherBody.position, Quaternion.identity);
+
+        // Enable physics on ragdoll
         rig.SetKinematic(false);
 
         if (inheritLauncherVelocity)
@@ -219,7 +192,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
                 b.angularVelocity = ang;
                 if (ragdollAngularDamping >= 0f)
                 {
-                    b.angularDamping = ragdollAngularDamping; // Unity 6
+                    b.angularDamping = ragdollAngularDamping; // Unity 6 property
                 }
             }
         }
@@ -229,12 +202,53 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
             rig.ResetMassProps();
         }
 
-        // 5) Turn off launcher so only the ragdoll collides
+        // Disable launcher so only the ragdoll collides
         launcherBody.isKinematic = true;
         launcherBody.useGravity = false;
         launcherBody.linearVelocity = Vector3.zero;
         launcherBody.angularVelocity = Vector3.zero;
         EnableLauncher(false);
+
+        OnLaunchStart?.Invoke();
+    }
+
+    // ---------------- IResettable ----------------
+
+    public void ResetToInitial()
+    {
+        _hasSwitched = false;
+        _isLaunching = false;
+        // Freeze everything
+        if (rig != null)
+        {
+            rig.SetKinematic(true);
+            rig.ZeroVelocities();
+            rig.RestorePoseSnapshot();
+            rig.ResetMassProps();
+        }
+
+        // Reset transform
+        rig.transform.localPosition = Vector3.zero;
+        transform.SetPositionAndRotation(_startPos, _startRot);
+
+        // Reset launcher
+        if (launcherBody != null)
+        {
+            launcherBody.isKinematic = true;
+            launcherBody.useGravity = false;
+            launcherBody.linearVelocity = Vector3.zero;
+            launcherBody.angularVelocity = Vector3.zero;
+            launcherBody.transform.localPosition = _launcherBodyStartLocalPos;
+            launcherBody.transform.rotation = Quaternion.identity;
+
+            EnableLauncher(false);
+        }
+
+        // Re-arm relay (in case object was disabled or swapped)
+        AttachOrConfigureRelay();
+
+        // Back to aim
+        EnterAimingPose();
     }
 
     // ---------------- Helpers ----------------
@@ -259,14 +273,20 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         if (launcherCollider != null)
         {
             launcherCollider.enabled = on;
+
+            if (on)
+            {
+                _isLaunching = true;
+            }
+            // Make sure the collider is set as a *non-trigger* for flight if you expect physics collisions,
+            // but it still receives OnTriggerEnter when overlapping trigger volumes.
+            // (i.e., launcherCollider.isTrigger = false;)
         }
 
         if (launcherBody != null)
         {
-            // Keep launcher on a dedicated layer if you need special collision during aim
             launcherBody.collisionDetectionMode = on ? launcherCollisionMode : CollisionDetectionMode.Discrete;
         }
     }
-
-
 }
+
