@@ -141,7 +141,11 @@ public class SlingshotController : MonoBehaviour, IGameController
         {
             Vector3 currentMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
             Vector3 delta = _pullPoint - currentMid;
-            _target.Parent.position += delta;
+            Vector3 targetPos = _target.Parent.position + delta;
+
+            // Example: lerp speed between 0 and 1, typically something like 0.1f for smooth motion
+            float lerpSpeed = 0.1f;
+            _target.Parent.position = Vector3.Lerp(_target.Parent.position, targetPos, lerpSpeed);
         }
 
         // --- Orient object with yaw clamp, store last clamped direction ---

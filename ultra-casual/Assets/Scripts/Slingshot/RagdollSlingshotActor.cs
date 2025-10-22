@@ -86,12 +86,13 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         EnterAimingPose();
         EnableLauncher(false);
     }
-    private void FixedUpdate()
+
+    private void LateUpdate()
     {
         // While we haven't switched, keep the character glued to the launcher
         if (_followLauncher && !_hasSwitched && launcherBody != null)
         {
-            rig.transform.localPosition = launcherBody.transform.localPosition;//(launcherBody.position, Quaternion.identity);
+            //rig.transform.localPosition = Vector3.Lerp(rig.transform.localPosition, launcherBody.transform.localPosition, 0.15f);//(launcherBody.position, Quaternion.identity);
         }
     }
     private void AttachOrConfigureRelay()
@@ -176,7 +177,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         _followLauncher = false;
         // Snap root to launcher pose
         rig.transform.localPosition = Vector3.zero;
-        transform.SetPositionAndRotation(launcherBody.position, Quaternion.identity);
+        //transform.SetPositionAndRotation(launcherBody.position, Quaternion.identity);
 
         // Enable physics on ragdoll
         rig.SetKinematic(false);
