@@ -1,6 +1,10 @@
-using System.Collections.Generic;
+
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class GameManager : MonoBehaviour
 {
@@ -11,10 +15,20 @@ public class GameManager : MonoBehaviour
     private IGameController _gameController;
     private readonly List<IResettable> _resettableCache = new();
 
+    // Cancellation for the active restart flow
+    private CancellationTokenSource _restartCts;
+
     private void Start()
     {
         CacheGameController();
         RebuildResettableCache();
+    }
+
+    private void OnDisable()
+    {
+        _restartCts?.Cancel();
+        _restartCts?.Dispose();
+        _restartCts = null;
     }
 
     private void CacheGameController()
@@ -25,30 +39,25 @@ public class GameManager : MonoBehaviour
         {
             _gameController = gameControllerBehaviour as IGameController;
             if (_gameController == null)
-            {
                 Debug.LogError("[GameManager] Assigned behaviour does not implement IGameController.");
-            }
         }
 
         if (_gameController == null)
         {
-            // Auto-find any behaviour that implements IGameController
             var all = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
             foreach (var mb in all)
             {
                 if (mb is IGameController gc)
                 {
                     _gameController = gc;
-                    gameControllerBehaviour = mb; // keep inspector in sync for visibility
+                    gameControllerBehaviour = mb; // keep inspector visible
                     break;
                 }
             }
         }
 
         if (_gameController == null)
-        {
-            Debug.LogWarning("[GameManager] No IGameController found. The game will still reset IResettable objects, but controller hooks won't run.");
-        }
+            Debug.LogWarning("[GameManager] No IGameController found. Will still reset IResettable objects.");
     }
 
     /// <summary>Build the list of scene objects that implement IResettable.</summary>
@@ -61,9 +70,7 @@ public class GameManager : MonoBehaviour
         {
             if (!mb || !mb.isActiveAndEnabled) continue;
             if (mb is IResettable r)
-            {
                 _resettableCache.Add(r);
-            }
         }
     }
 
@@ -80,20 +87,59 @@ public class GameManager : MonoBehaviour
         _gameController?.EndGame();
     }
 
-    /// <summary>Convenience: reset and restart gameplay loop.</summary>
-    public void RestartGame()
+    /// <summary>Show final score, then reset and restart gameplay (UniTask flow).</summary>
+    public void RestartGame(float final)
     {
-        StartGame();
+        // Cancel any previous flow
+        _restartCts?.Cancel();
+        _restartCts?.Dispose();
+        _restartCts = new CancellationTokenSource();
+
+        RestartRoutineAsync(final, _restartCts.Token).Forget();
+    }
+
+    private async UniTask RestartRoutineAsync(float final, CancellationToken token)
+    {
+        try
+        {
+            // 1) End current run (optional)
+            EndGame();
+
+            // 2) Find any presenter and show the score
+            var endGameOrchestrator = FindObjectsByType<EndGameOrchestrator>(FindObjectsSortMode.None)
+                .FirstOrDefault();
+
+            if (endGameOrchestrator != null)
+            {
+                await endGameOrchestrator.OrchestrateEnd(runScoreDelta: 10, startScoreValue: 200);
+            }
+            else
+            {
+                Debug.LogWarning("[GameManager] No IFinalScorePresenter found. Restarting quickly.");
+                await UniTask.Delay(TimeSpan.FromSeconds(0.25),
+                    DelayType.UnscaledDeltaTime,
+                    PlayerLoopTiming.Update,
+                    token);
+            }
+
+            // 3) Start new run
+            StartGame();
+        }
+        catch (OperationCanceledException)
+        {
+            // Swallow if we canceled due to disable/restart spam
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
     }
 
     private void ResetAll()
     {
-        // If the scene structure can change, uncomment:
-        // RebuildResettableCache();
-
         foreach (var r in _resettableCache.ToList())
         {
-            if (r is Object unityObj && unityObj == null) continue; // destroyed
+            //if (r is GameObject unityObj && unityObj == null) continue; // destroyed
             r.ResetToInitial();
         }
     }
@@ -101,7 +147,7 @@ public class GameManager : MonoBehaviour
     // Quick keyboard test
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.R)) RestartGame();
+        if (Input.GetKeyDown(KeyCode.R)) RestartGame(100f);
         if (Input.GetKeyDown(KeyCode.E)) EndGame();
     }
 }

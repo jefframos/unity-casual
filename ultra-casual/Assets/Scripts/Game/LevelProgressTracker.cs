@@ -99,6 +99,6 @@ public class LevelProgressTracker : MonoBehaviour
     // Utility API for an external “Restart” button, etc.
     public void RestartRun()
     {
-        gameManager?.RestartGame();
+        gameManager?.RestartGame(0f);
     }
 }
