@@ -45,6 +45,22 @@ public class FinalScorePresenterTMP : FinalScorePresenter
         // Await the task directly — no .Forget()
         await ShowFinalScoreAsync(score, _cts.Token);
     }
+    public override async UniTask AwaitEnd(CancellationToken token)
+    {
+        if (waitForAnyKey)
+        {
+            await WaitForKeyAsync(continueKey, token);
+        }
+
+        // --- Fade Out ---
+        if (canvasGroup != null)
+        {
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+            await AnimationHelper.FadeCanvasAsync(canvasGroup, 1f, 0f, fadeOutSeconds, token);
+        }
+
+    }
 
     public override async UniTask ShowFinalScoreAsync(float score, CancellationToken token)
     {
@@ -64,7 +80,7 @@ public class FinalScorePresenterTMP : FinalScorePresenter
         {
             scoreLabel.text = "0";
             _ = AnimationHelper.ScaleTransformAsync(scoreLabel.transform, Vector3.one, Vector3.one * 1.2f, scoreCountSeconds);
-            await AnimationHelper.AnimateScoreAsync(scoreLabel, 0f, score, scoreCountSeconds, "Final Score: ", token);
+            await AnimationHelper.AnimateScoreAsync(scoreLabel, 0f, score, scoreCountSeconds, "", token);
         }
 
         // --- Hold Minimum Display Time ---
@@ -73,16 +89,8 @@ public class FinalScorePresenterTMP : FinalScorePresenter
             await UniTask.Yield(token);
 
         // --- Optional Wait for Input ---
-        if (waitForAnyKey)
-            await WaitForKeyAsync(continueKey, token);
 
-        // --- Fade Out ---
-        if (canvasGroup != null)
-        {
-            canvasGroup.interactable = false;
-            canvasGroup.blocksRaycasts = false;
-            await AnimationHelper.FadeCanvasAsync(canvasGroup, 1f, 0f, fadeOutSeconds, token);
-        }
+
 
         // Optionally disable UI
         // gameObject.SetActive(false);

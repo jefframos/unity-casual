@@ -1,16 +1,21 @@
-
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Threading.Tasks;
+using UnityEngine.WSA;
 
 public class GameManager : MonoBehaviour
 {
     [Header("Controller")]
     [Tooltip("Assign a MonoBehaviour that implements IGameController. If left empty, the manager will try to find one at runtime.")]
     public MonoBehaviour gameControllerBehaviour; // must implement IGameController
+
+    [Header("UI")]
+    public GameUiHandler uiHandler;
+    public UiMode startMode = UiMode.MainMenu; // optional: initial state at play
 
     private IGameController _gameController;
     private readonly List<IResettable> _resettableCache = new();
@@ -22,6 +27,11 @@ public class GameManager : MonoBehaviour
     {
         CacheGameController();
         RebuildResettableCache();
+
+        if (uiHandler != null)
+        {
+            uiHandler.SetMode(startMode);
+        }
     }
 
     private void OnDisable()
@@ -39,7 +49,9 @@ public class GameManager : MonoBehaviour
         {
             _gameController = gameControllerBehaviour as IGameController;
             if (_gameController == null)
+            {
                 Debug.LogError("[GameManager] Assigned behaviour does not implement IGameController.");
+            }
         }
 
         if (_gameController == null)
@@ -57,10 +69,22 @@ public class GameManager : MonoBehaviour
         }
 
         if (_gameController == null)
+        {
             Debug.LogWarning("[GameManager] No IGameController found. Will still reset IResettable objects.");
+        }
+
+        _gameController.OnShotStarted += OnShotStarted;
     }
 
     /// <summary>Build the list of scene objects that implement IResettable.</summary>
+    public void OnShotStarted(Transform launcher)
+    {
+        // Switch UI to gameplay HUD
+        if (uiHandler != null)
+        {
+            uiHandler.SetMode(UiMode.InGame);
+        }
+    }
     public void RebuildResettableCache()
     {
         _resettableCache.Clear();
@@ -70,7 +94,9 @@ public class GameManager : MonoBehaviour
         {
             if (!mb || !mb.isActiveAndEnabled) continue;
             if (mb is IResettable r)
+            {
                 _resettableCache.Add(r);
+            }
         }
     }
 
@@ -79,39 +105,59 @@ public class GameManager : MonoBehaviour
     {
         _gameController?.ResetGameState();
         ResetAll();
+
+
     }
 
-    /// <summary>End the current run (optional; currently no-op in controller).</summary>
+    /// <summary>End the current run.</summary>
     public void EndGame()
     {
         _gameController?.EndGame();
+
+
+    }
+
+    public void RestartGame(float final)
+    {
+        _ = RestartGame(Mathf.CeilToInt(final));
     }
 
     /// <summary>Show final score, then reset and restart gameplay (UniTask flow).</summary>
-    public void RestartGame(float final)
+    public async Task RestartGame(int final)
     {
-        // Cancel any previous flow
         _restartCts?.Cancel();
         _restartCts?.Dispose();
         _restartCts = new CancellationTokenSource();
 
-        RestartRoutineAsync(final, _restartCts.Token).Forget();
+
+
+        await RestartRoutineAsync(final, _restartCts.Token);
+
+        // Swap UI to out-of-game or results/menu as you prefer
+        if (uiHandler != null)
+        {
+            uiHandler.SetMode(UiMode.OutGame); // or UiMode.GameOver / Results
+        }
     }
 
-    private async UniTask RestartRoutineAsync(float final, CancellationToken token)
+    private async UniTask RestartRoutineAsync(int final, CancellationToken token)
     {
         try
         {
             // 1) End current run (optional)
             EndGame();
 
-            // 2) Find any presenter and show the score
+            // 2) Show result/score while in OutGame/Results UI
             var endGameOrchestrator = FindObjectsByType<EndGameOrchestrator>(FindObjectsSortMode.None)
                 .FirstOrDefault();
 
+
+
             if (endGameOrchestrator != null)
             {
-                await endGameOrchestrator.OrchestrateEnd(runScoreDelta: 10, startScoreValue: 200);
+                await endGameOrchestrator.OrchestrateEnd(runScoreDelta: 10, startScoreValue: final);
+
+
             }
             else
             {
@@ -122,7 +168,9 @@ public class GameManager : MonoBehaviour
                     token);
             }
 
-            // 3) Start new run
+
+
+            // 3) Start new run + switch UI back to InGame
             StartGame();
         }
         catch (OperationCanceledException)
@@ -139,7 +187,6 @@ public class GameManager : MonoBehaviour
     {
         foreach (var r in _resettableCache.ToList())
         {
-            //if (r is GameObject unityObj && unityObj == null) continue; // destroyed
             r.ResetToInitial();
         }
     }
@@ -147,7 +194,7 @@ public class GameManager : MonoBehaviour
     // Quick keyboard test
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.R)) RestartGame(100f);
+        if (Input.GetKeyDown(KeyCode.R)) _ = RestartGame(100);
         if (Input.GetKeyDown(KeyCode.E)) EndGame();
     }
 }

@@ -136,12 +136,13 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         rig.ZeroVelocities();
 
         // Position launcher at root pose (so the shot starts aligned)
-        launcherBody.isKinematic = true;
+        launcherBody.isKinematic = false;
         launcherBody.useGravity = false;
         launcherBody.position = transform.position;
         launcherBody.rotation = transform.rotation;
         launcherBody.linearVelocity = Vector3.zero;
         launcherBody.angularVelocity = Vector3.zero;
+        launcherBody.isKinematic = true;
         launcherBody.collisionDetectionMode = launcherCollisionMode;
 
         EnableLauncher(true);
@@ -204,10 +205,11 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         }
 
         // Disable launcher so only the ragdoll collides
-        launcherBody.isKinematic = true;
+        launcherBody.isKinematic = false;
         launcherBody.useGravity = false;
         launcherBody.linearVelocity = Vector3.zero;
         launcherBody.angularVelocity = Vector3.zero;
+        launcherBody.isKinematic = true;
         EnableLauncher(false);
 
         OnLaunchStart?.Invoke();
@@ -235,10 +237,11 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         // Reset launcher
         if (launcherBody != null)
         {
-            launcherBody.isKinematic = true;
             launcherBody.useGravity = false;
+            launcherBody.isKinematic = false;
             launcherBody.linearVelocity = Vector3.zero;
             launcherBody.angularVelocity = Vector3.zero;
+            launcherBody.isKinematic = true;
             launcherBody.transform.localPosition = _launcherBodyStartLocalPos;
             launcherBody.transform.rotation = Quaternion.identity;
 

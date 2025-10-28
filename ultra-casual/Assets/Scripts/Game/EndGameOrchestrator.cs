@@ -44,16 +44,28 @@ public class EndGameOrchestrator : MonoBehaviour
     public float scoreCountSeconds = 1.0f;   // AnimateScore duration
     public string scorePrefix = "Final Score: ";
 
+    [Header("Pooling (World Coins)")]
+    [Tooltip("Parent transform to keep pooled world coins organized (optional).")]
+    public Transform worldCoinPoolParent;
+    [Tooltip("Initial number of world coins to pre-instantiate in the pool.")]
+    public int prewarmWorldCoins = 20;
+    [Tooltip("When converting to UI, return the world coin to the pool instead of keeping it visible.")]
+    public bool returnWorldCoinsOnConvert = true;
+
     [Header("Misc")]
-    public bool destroyWorldCoinsOnConvert = true;
     public bool setUpdateUnscaled = true;    // tweens run with unscaled time
 
     // Cancellation of an in-flight orchestrated sequence
     private CancellationTokenSource _cts;
 
+    // --- simple stack-based pool for world coins ---
+    private readonly Stack<GameObject> _worldCoinPool = new Stack<GameObject>();
+    private readonly HashSet<GameObject> _activeWorldCoins = new HashSet<GameObject>();
+
     private void Awake()
     {
         if (worldCamera == null) worldCamera = Camera.main;
+        PrewarmWorldCoinPool();
     }
 
     private void OnDisable()
@@ -74,12 +86,10 @@ public class EndGameOrchestrator : MonoBehaviour
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
-        // Await the task directly — no .Forget()
         await OrchestrateEndAsync(runScoreDelta, startScoreValue, _cts.Token);
     }
 
-
-    private async UniTask OrchestrateEndAsync(int runScoreDelta, int startScoreValue, CancellationToken token)
+    private async UniTask OrchestrateEndAsync(int runScoreDelta, int finalScoreValue, CancellationToken token)
     {
         if (player == null || worldCamera == null || uiCanvas == null || scoreTarget == null)
         {
@@ -93,23 +103,53 @@ public class EndGameOrchestrator : MonoBehaviour
         {
             await BurstCoinsOutAsync(worldCoins, scatterExplodeSeconds, token);
         }
-        catch (OperationCanceledException) { CleanupWorld(worldCoins); throw; }
+        catch (OperationCanceledException)
+        {
+            CleanupWorld(worldCoins);
+            throw;
+        }
 
         // --- 2) Start score counting (runs in parallel with coin flights) ---
+        if (scoreLabel != null)
+        {
+            if (scorePresenter)
+            {
+                // Start but don't await; coin flights run while the presenter handles UI.
+                scorePresenter.ShowFinalScore(finalScoreValue).Forget();
+            }
+            else
+            {
+                scoreLabel.text = $"{scorePrefix}{finalScoreValue}";
+                AnimationHelper.AnimateScoreAsync(
+                    scoreLabel,
+                    finalScoreValue,
+                    finalScoreValue + runScoreDelta,
+                    scoreCountSeconds,
+                    scorePrefix,
+                    token
+                ).Forget();
+            }
+        }
+
+
+
+        UpgradeSystem.Instance.AddCoins(finalScoreValue);
 
 
         // --- 3) Convert each coin to a UI clone and fly to the scoreTarget sequentially ---
         float perCoinDelay = (coinCount <= 0) ? 0f : Mathf.Max(0f, totalCollectSeconds) / coinCount;
+
         for (int i = 0; i < worldCoins.Count; i++)
         {
             token.ThrowIfCancellationRequested();
 
             var wcoin = worldCoins[i];
+            if (wcoin == null) continue;
 
             // Capture the coin's current screen position
             Vector2 startScreen = worldCamera.WorldToScreenPoint(wcoin.transform.position);
 
-            // Optionally nudge the coin for a tiny "lift" before converting to UI
+            // Tiny lift nudge before converting to UI
             var nudgeDuration = 0.08f;
             wcoin.transform.DOMove(wcoin.transform.position + Vector3.up * 0.15f, nudgeDuration)
                 .SetEase(Ease.OutSine)
@@ -119,32 +159,42 @@ public class EndGameOrchestrator : MonoBehaviour
             var uiCoin = Instantiate(uiCoinPrefab, uiCanvas.transform, worldPositionStays: false);
             uiCoin.gameObject.SetActive(true);
             uiCoin.SetAsLastSibling();
-
-            // Place UI coin at proper anchored position
             uiCoin.anchoredPosition = ScreenToCanvasAnchored(uiCanvas, startScreen);
 
-            // Clean up world coin (optional) to avoid seeing both
-            if (destroyWorldCoinsOnConvert && wcoin != null)
-                Destroy(wcoin);
+            // Return world coin to pool so you don't see both
+            if (returnWorldCoinsOnConvert)
+            {
+                ReturnWorldCoin(wcoin);
+            }
 
             // Travel time per coin with small variation
             float tTravel = Mathf.Lerp(coinTravelSecondsMin, coinTravelSecondsMax, UnityEngine.Random.value);
-            // guarantee total pacing by inserting a delay before starting the next coin
-            // (We start this coin immediately, and delay the loop for perCoinDelay below)
             var arc = UnityEngine.Random.Range(coinArcScreenPixelsMin, coinArcScreenPixelsMax);
-            var coinTravelTask = FlyUICoinToTargetAsync(uiCoin, scoreTarget, tTravel, coinTravelEase, arc, setUpdateUnscaled, token);
 
-            // Optional per-coin delay to string them out over totalCollectSeconds
-            // NOTE: Delay does not block this coin's travel—just the start of the NEXT coin.
-            //await UniTask.Delay(TimeSpan.FromSeconds(perCoinDelay), DelayType.UnscaledDeltaTime, PlayerLoopTiming.Update, token);
+            var coinTravelTask = FlyUICoinToTargetAsync(
+                uiCoin,
+                scoreTarget,
+                tTravel,
+                coinTravelEase,
+                arc,
+                setUpdateUnscaled,
+                token
+            );
 
-            // Fire-and-forget arrival punch + cleanup
+            // Stagger next coin start (without blocking this coin's flight)
+            if (perCoinDelay > 0f)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(perCoinDelay), DelayType.UnscaledDeltaTime, PlayerLoopTiming.Update, token);
+            }
+
+            // Cleanup UI coin on arrival (punch optional)
             coinTravelTask.ContinueWith(() =>
             {
-                if (punchOnArrive && uiCoin != null)
+                if (uiCoin == null) return;
+
+                uiCoin.DOKill();
+                if (punchOnArrive)
                 {
-                    // Tiny punch on the target (not the icon itself, but the coin clone then dispose)
-                    uiCoin.DOKill();
                     uiCoin.DOScale(Vector3.one * 1.2f, 0.08f).SetUpdate(setUpdateUnscaled).OnComplete(() =>
                     {
                         if (uiCoin) Destroy(uiCoin.gameObject);
@@ -152,56 +202,109 @@ public class EndGameOrchestrator : MonoBehaviour
                 }
                 else
                 {
-                    if (uiCoin) Destroy(uiCoin.gameObject);
+                    Destroy(uiCoin.gameObject);
                 }
             }).Forget();
         }
 
-        if (scoreLabel != null)
+
+        if (scorePresenter)
         {
-
-            if (scorePresenter)
-            {
-                await scorePresenter.ShowFinalScore(startScoreValue);
-            }
-            else
-            {
-
-                scoreLabel.text = $"{scorePrefix}{startScoreValue}";
-
-
-                // Run score animation in the background
-                AnimationHelper.AnimateScoreAsync(
-                    scoreLabel,
-                    startScoreValue,
-                    startScoreValue + runScoreDelta,
-                    scoreCountSeconds,
-                    scorePrefix,
-                    token
-                ).Forget();
-            }
-            // Set starting text
+            // Start but don't await; coin flights run while the presenter handles UI.
+            await scorePresenter.AwaitEnd(token);
         }
-        // Final hedge: wait a tiny bit after the last coin delay so late tweens can complete nicely
+        // Small hedge so late tweens can complete nicely
         await UniTask.Delay(TimeSpan.FromSeconds(0.1f), DelayType.UnscaledDeltaTime, PlayerLoopTiming.Update, token);
 
-        // Cleanup any remaining world coins if not destroyed earlier
+
+        // Cleanup any remaining world coins if still active
         CleanupWorld(worldCoins);
     }
 
-    // ---------- Helpers ----------
+    // ---------- Pool (World Coins) ----------
+
+    private void PrewarmWorldCoinPool()
+    {
+        if (worldCoinPrefab == null || prewarmWorldCoins <= 0) return;
+
+        for (int i = 0; i < prewarmWorldCoins; i++)
+        {
+            var go = Instantiate(worldCoinPrefab, worldCoinPoolParent != null ? worldCoinPoolParent : transform);
+            PreparePooledWorldCoin(go);
+            go.SetActive(false);
+            _worldCoinPool.Push(go);
+        }
+    }
+
+    private GameObject RentWorldCoin()
+    {
+        GameObject go = (_worldCoinPool.Count > 0) ? _worldCoinPool.Pop() : null;
+        if (go == null)
+        {
+            if (worldCoinPrefab == null)
+            {
+                Debug.LogWarning("[EndGameOrchestrator] No worldCoinPrefab assigned; cannot rent.");
+                return null;
+            }
+            go = Instantiate(worldCoinPrefab, worldCoinPoolParent != null ? worldCoinPoolParent : transform);
+            PreparePooledWorldCoin(go);
+        }
+
+        go.SetActive(true);
+        _activeWorldCoins.Add(go);
+        return go;
+    }
+
+    private void ReturnWorldCoin(GameObject go)
+    {
+        if (go == null) return;
+
+        // Kill tweens safely
+        var t = go.transform;
+        t.DOKill();
+
+        // Reset basic transform state (optional — tweak as needed)
+        t.localScale = Vector3.one;
+        // keep rotation/position set by caller when re-renting
+
+        // Deactivate and parent under pool
+        if (worldCoinPoolParent != null) t.SetParent(worldCoinPoolParent, worldPositionStays: false);
+        go.SetActive(false);
+
+        _activeWorldCoins.Remove(go);
+        _worldCoinPool.Push(go);
+    }
+
+    private static void PreparePooledWorldCoin(GameObject go)
+    {
+        // Optional hook: configure layers/rigidbody/collider if needed
+        // e.g., disable physics while pooled, etc.
+        // For now, nothing special required.
+    }
+
+    // ---------- Existing Helpers (adapted to use pool) ----------
 
     private List<GameObject> SpawnWorldCoins(Vector3 center, int count)
     {
         var list = new List<GameObject>(count);
         for (int i = 0; i < count; i++)
         {
-            if (worldCoinPrefab == null) break;
+            var go = RentWorldCoin();
+            if (go == null) break;
 
             var angle = UnityEngine.Random.value * Mathf.PI * 2f;
             var r = UnityEngine.Random.Range(0.2f, scatterRadius);
-            var offset = new Vector3(Mathf.Cos(angle) * r, UnityEngine.Random.Range(0.0f, 0.3f), Mathf.Sin(angle) * r);
-            var go = Instantiate(worldCoinPrefab, center + offset * 0.15f, Quaternion.identity);
+            var offset = new Vector3(
+                Mathf.Cos(angle) * r,
+                UnityEngine.Random.Range(0.0f, 0.3f),
+                Mathf.Sin(angle) * r
+            );
+
+            var t = go.transform;
+            // Place in world where it will burst from
+            t.position = center + offset * 0.15f;
+            t.rotation = Quaternion.identity;
+
             list.Add(go);
         }
         return list;
@@ -252,17 +355,11 @@ public class EndGameOrchestrator : MonoBehaviour
         // START: coin is already under uiCanvas, so anchoredPosition is correct
         Vector2 startLocal = coin.anchoredPosition;
 
-        // END: use the target rect's center in canvas space (not scene/world camera!)
+        // END: use the target rect's center in canvas space
         Vector3 targetWorldCenter = target.TransformPoint(target.rect.center);
         Vector2 endScreen = RectTransformUtility.WorldToScreenPoint(canvasCam, targetWorldCenter);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, endScreen, canvasCam, out var endLocal);
 
-        // Optional: clamp end to canvas rect (prevents flying off if anchors/pivots are odd)
-        // var half = canvasRect.rect.size * 0.5f;
-        // endLocal.x = Mathf.Clamp(endLocal.x, -half.x, half.x);
-        // endLocal.y = Mathf.Clamp(endLocal.y, -half.y, half.y);
-
-        // Bezier setup in CANVAS space (anchoredPosition)
         float tParam = 0f;
         Vector3 a = startLocal;                  // start
         Vector3 b = endLocal;                    // end
@@ -278,8 +375,6 @@ public class EndGameOrchestrator : MonoBehaviour
         .SetEase(ease)
         .SetUpdate(unscaled);
 
-        // Ensure the tween is killed if the provided cancellation token is triggered,
-        // then await the tween's completion task (DOTween returns a System.Threading.Tasks.Task).
         CancellationTokenRegistration ctr = default;
         if (token.CanBeCanceled)
             ctr = token.Register(() => { if (tw != null && tw.IsActive()) tw.Kill(); });
@@ -294,12 +389,16 @@ public class EndGameOrchestrator : MonoBehaviour
         }
     }
 
-
-    private static void CleanupWorld(List<GameObject> worldCoins)
+    private void CleanupWorld(List<GameObject> worldCoins)
     {
         if (worldCoins == null) return;
         foreach (var c in worldCoins)
-            if (c) Destroy(c);
+        {
+            if (c != null && _activeWorldCoins.Contains(c))
+            {
+                ReturnWorldCoin(c);
+            }
+        }
         worldCoins.Clear();
     }
 
@@ -310,14 +409,12 @@ public class EndGameOrchestrator : MonoBehaviour
         var canvasRect = canvas.transform as RectTransform;
         if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
         {
-            // Overlay: screen coords to local anchored
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRect, screenPos, null, out var local);
             return local;
         }
         else
         {
-            // ScreenSpace-Camera or WorldSpace
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRect, screenPos, canvas.worldCamera, out var local);
             return local;

@@ -10,4 +10,5 @@ public abstract class FinalScorePresenter : MonoBehaviour
     /// </summary>
     public abstract UniTask ShowFinalScore(float score);
     public abstract UniTask ShowFinalScoreAsync(float score, CancellationToken token);
+    public abstract UniTask AwaitEnd(CancellationToken token);
 }

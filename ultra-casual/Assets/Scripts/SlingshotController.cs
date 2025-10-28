@@ -32,14 +32,18 @@ public class SlingshotController : MonoBehaviour, IGameController
 
     [Header("Cinemachine Events")]
     public UnityEvent OnEnterSlingshotMode; // fired when aiming starts
-    public Action<Transform> OnShotStarted;    // fired when launch happens (passes follow target)
-    public Action<Transform> OnLaunchSarted;    // fired when launch happens (passes follow target)
+    // public Action<Transform> OnShotStarted;    // fired when launch happens (passes follow target)
+    // public Action<Transform> OnLaunchSarted;    // fired when launch happens (passes follow target)
 
     // State
     private bool _isDragging;
     private bool _isAiming;
     private Vector3 _pullPoint;
     private Vector3 _lastClampedDir = Vector3.forward;
+
+    public event Action<Transform> OnLaunchStarted;
+
+    public event Action<Transform> OnShotStarted;
 
     private void OnValidate()
     {
@@ -72,7 +76,7 @@ public class SlingshotController : MonoBehaviour, IGameController
 
     private void LaunchStarted()
     {
-        OnLaunchSarted?.Invoke(_target.FollowTarget ? _target.FollowTarget : _target.Parent);
+        OnLaunchStarted?.Invoke(_target.FollowTarget ? _target.FollowTarget : _target.Parent);
 
     }
 

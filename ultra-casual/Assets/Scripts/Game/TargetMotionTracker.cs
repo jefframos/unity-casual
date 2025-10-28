@@ -43,13 +43,13 @@ public class TargetMotionTracker : MonoBehaviour
     private void OnEnable()
     {
         if (controller != null)
-            controller.OnLaunchSarted += HandleLaunchStarted; // keeping your event name as-is
+            controller.OnLaunchStarted += HandleLaunchStarted; // keeping your event name as-is
     }
 
     private void OnDisable()
     {
         if (controller != null)
-            controller.OnLaunchSarted -= HandleLaunchStarted;
+            controller.OnLaunchStarted -= HandleLaunchStarted;
     }
 
     private void HandleLaunchStarted(Transform followTarget)

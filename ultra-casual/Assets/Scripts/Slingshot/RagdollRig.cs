@@ -120,8 +120,12 @@ public class RagdollRig : MonoBehaviour
     {
         foreach (var b in _bodies)
         {
+            bool prevK = b.isKinematic;
+            b.isKinematic = false;
             b.linearVelocity = Vector3.zero;    // Unity 6
             b.angularVelocity = Vector3.zero;
+            b.isKinematic = prevK;
+
         }
     }
 

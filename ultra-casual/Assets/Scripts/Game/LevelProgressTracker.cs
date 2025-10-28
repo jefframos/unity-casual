@@ -40,7 +40,7 @@ public class LevelProgressTracker : MonoBehaviour
     {
         // Wire controller start
         if (controller != null)
-            controller.OnLaunchSarted += HandleRunStarted;
+            controller.OnLaunchStarted += HandleRunStarted;
 
         // Wire tracker updates
         if (motionTracker != null)
@@ -53,7 +53,7 @@ public class LevelProgressTracker : MonoBehaviour
     private void OnDisable()
     {
         if (controller != null)
-            controller.OnLaunchSarted -= HandleRunStarted;
+            controller.OnLaunchStarted -= HandleRunStarted;
 
         if (motionTracker != null)
         {
@@ -89,6 +89,8 @@ public class LevelProgressTracker : MonoBehaviour
             OnNewRecord?.Invoke(bestDistance);
         }
 
+        Debug.Log(finalDistance);
+
         OnRunEnded?.Invoke(finalDistance);
 
         // Optional: notify GameManager that a run ended
@@ -99,6 +101,6 @@ public class LevelProgressTracker : MonoBehaviour
     // Utility API for an external “Restart” button, etc.
     public void RestartRun()
     {
-        gameManager?.RestartGame(0f);
+        gameManager?.RestartGame(0);
     }
 }
