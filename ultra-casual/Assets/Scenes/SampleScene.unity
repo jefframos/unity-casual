@@ -932,8 +932,9 @@ MonoBehaviour:
   cardsParent: {fileID: 882135035}
   addCoinsButton: {fileID: 1026317542}
   coinsLabel: {fileID: 470160626}
-  addCoinsAmount: 500
+  coinFillDuration: 2
   defaultStepPerTick: 10
+  addCoinsAmount: 500
 --- !u!1001 &31992576
 PrefabInstance:
   m_ObjectHideFlags: 0
