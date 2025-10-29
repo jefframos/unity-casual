@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Threading.Tasks;
-using UnityEngine.WSA;
 
 public class GameManager : MonoBehaviour
 {
@@ -73,16 +72,25 @@ public class GameManager : MonoBehaviour
             Debug.LogWarning("[GameManager] No IGameController found. Will still reset IResettable objects.");
         }
 
-        _gameController.OnShotStarted += OnShotStarted;
+        _gameController.OnEnterGameMode += OnEnterGameMode;
+        _gameController.OnReleaseStarted += OnReleaseStarted;
     }
 
-    /// <summary>Build the list of scene objects that implement IResettable.</summary>
-    public void OnShotStarted(Transform launcher)
+    public void OnReleaseStarted(Transform launcher)
     {
         // Switch UI to gameplay HUD
         if (uiHandler != null)
         {
             uiHandler.SetMode(UiMode.InGame);
+        }
+    }
+    /// <summary>Build the list of scene objects that implement IResettable.</summary>
+    public void OnEnterGameMode(Transform launcher)
+    {
+        // Switch UI to gameplay HUD
+        if (uiHandler != null)
+        {
+            uiHandler.SetMode(UiMode.PreGame);
         }
     }
     public void RebuildResettableCache()
@@ -128,7 +136,6 @@ public class GameManager : MonoBehaviour
         _restartCts?.Cancel();
         _restartCts?.Dispose();
         _restartCts = new CancellationTokenSource();
-
 
 
         await RestartRoutineAsync(final, _restartCts.Token);

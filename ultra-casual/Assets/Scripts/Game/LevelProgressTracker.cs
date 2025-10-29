@@ -89,7 +89,6 @@ public class LevelProgressTracker : MonoBehaviour
             OnNewRecord?.Invoke(bestDistance);
         }
 
-        Debug.Log(finalDistance);
 
         OnRunEnded?.Invoke(finalDistance);
 

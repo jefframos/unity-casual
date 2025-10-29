@@ -111,7 +111,7 @@ Shader "Jeff/ToonLitWithOutline"
             float2 uv = float2(x, 0.5); // assume 1xN or Nx1 with clamp
             float3 ramp = SAMPLE_TEXTURE2D(_Ramp, sampler_Ramp, uv).rgb;
             // option to sharpen bands
-            ramp = pow(ramp, _RampSharpness);
+            ramp = pow(abs(ramp), _RampSharpness);
             ramp = max(ramp, _ShadowBoost);
             return ramp;
         }

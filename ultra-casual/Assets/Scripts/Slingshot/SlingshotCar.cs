@@ -29,6 +29,7 @@ public class SlingshotCar : MonoBehaviour, ISlingshotable, IResettable
     public int solverVelocityIterations = 12;
 
     public event Action OnLaunchStart;
+    public event Action OnReleaseStart;
 
     private void Reset()
     {

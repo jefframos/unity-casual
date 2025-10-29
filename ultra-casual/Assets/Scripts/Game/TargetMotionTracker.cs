@@ -84,7 +84,7 @@ public class TargetMotionTracker : MonoBehaviour
         if (!IsTracking) return;
         IsTracking = false;
         if (fireStoppedEvent)
-            Stopped?.Invoke(DistanceTravelled);
+            Stopped?.Invoke(totalDistance);
     }
 
     private void FixedUpdate()

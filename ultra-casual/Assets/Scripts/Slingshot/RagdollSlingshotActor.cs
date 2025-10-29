@@ -47,6 +47,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
 
     private bool _isLaunching = false;
 
+    public event Action OnReleaseStart;
     public event Action OnLaunchStart;
 
     private void Reset()
@@ -152,6 +153,8 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         launcherBody.isKinematic = false;
         launcherBody.useGravity = true;
         launcherBody.AddForce(dir * impulse, ForceMode.VelocityChange);
+
+        OnReleaseStart?.Invoke();
     }
 
     // ---------------- External switch trigger ----------------

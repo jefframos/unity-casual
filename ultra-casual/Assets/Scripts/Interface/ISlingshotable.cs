@@ -21,4 +21,5 @@ public interface ISlingshotable
     void Launch(Vector3 direction, float impulse);
 
     event Action OnLaunchStart;
+    event Action OnReleaseStart;
 }

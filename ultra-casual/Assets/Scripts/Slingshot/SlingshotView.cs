@@ -88,6 +88,36 @@ public class SlingshotView : MonoBehaviour
 
         return GetBandCenter();
     }
+    public Vector3 ClampPointBetweenPoles(Vector3 point, float endInset = 0f)
+    {
+        // Ensure we work on the slingshot plane
+        Vector3 up = upAxis.normalized;
+
+        Vector3 A = leftPole.position;
+        Vector3 B = rightPole.position;
+
+        // Project everything to plane
+        Vector3 AP = Vector3.ProjectOnPlane(point - A, up);
+        Vector3 AB = Vector3.ProjectOnPlane(B - A, up);
+
+        float len = AB.magnitude;
+        if (len < 1e-4f) return point; // degenerate poles
+
+        Vector3 side = AB / len;
+
+        // Scalar position along segment AB from A
+        float t = Vector3.Dot(AP, side);
+
+        // Optional inset to keep off the exact tips (e.g. rope thickness)
+        float minT = Mathf.Clamp(endInset, 0f, len);
+        float maxT = Mathf.Clamp(len - endInset, 0f, len);
+        t = Mathf.Clamp(t, minT, maxT);
+
+        // Rebuild: keep the component perpendicular to AB (i.e., your "back" distance)
+        Vector3 along = A + side * t;
+        Vector3 perp = Vector3.ProjectOnPlane((A + AP) - along, side); // remove along-side, keep perpendicular/back
+        return along + perp;
+    }
 
     public void DrawBands(ISlingshotable target)
     {

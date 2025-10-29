@@ -16,10 +16,13 @@ public interface IGameController
     /// <summary>
     /// Fired when the launch (shot) starts — passes the follow target.
     /// </summary>
+    event Action<Transform> OnEnterEndMode;
+    event Action<Transform> OnEnterGameMode;
     event Action<Transform> OnShotStarted;
 
     /// <summary>
     /// Fired when the launch actually begins (same as above if not differentiated).
     /// </summary>
+    event Action<Transform> OnReleaseStarted;
     event Action<Transform> OnLaunchStarted;
 }

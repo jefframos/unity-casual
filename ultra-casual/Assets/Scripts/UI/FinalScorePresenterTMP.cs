@@ -67,6 +67,8 @@ public class FinalScorePresenterTMP : FinalScorePresenter
         if (!gameObject.activeSelf)
             gameObject.SetActive(true);
 
+        scoreLabel.text = "0m";
+
         // --- Fade In ---
         if (canvasGroup != null)
         {

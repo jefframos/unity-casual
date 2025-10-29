@@ -97,6 +97,9 @@ public class EndGameOrchestrator : MonoBehaviour
             return;
         }
 
+        var multiplier = UpgradeSystem.Instance.GetValue(UpgradeType.COIN);
+
+        finalScoreValue = Mathf.CeilToInt(finalScoreValue * multiplier);
         // --- 1) Spawn world coins in a burst around the player ---
         var worldCoins = SpawnWorldCoins(player.position, coinCount);
         try

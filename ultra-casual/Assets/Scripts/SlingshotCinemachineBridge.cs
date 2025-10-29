@@ -1,39 +1,75 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Cinemachine;
 
 [DisallowMultipleComponent]
 public class SlingshotCinemachineBridge : MonoBehaviour
 {
-    [Header("Refs")]
-    public SlingshotController slingshot;
+    // ---------- Enums ----------
+    public enum GameCameraMode
+    {
+        OutGame,
+        PreGame,
+        InGame,
+        EndGame
+    }
 
-    [Tooltip("Fixed camera used while aiming the slingshot.")]
-    public CinemachineCamera aimVcam;
+    [Serializable]
+    public struct CameraModeEntry
+    {
+        public GameCameraMode mode;
+        public CinemachineCamera camera;
+    }
 
-    [Tooltip("Camera that follows the car after launch.")]
-    public CinemachineCamera followVcam;
+    // ---------- Serialized fields ----------
+    [Header("Camera Table")]
+    [Tooltip("List of mode-camera pairs. Works like a dictionary but visible in the editor.")]
+    public List<CameraModeEntry> cameraTable = new List<CameraModeEntry>();
 
-    [Header("Aim Camera Pose")]
-    [Tooltip("Optional: a transform to position/orient the AimVcam on enter. If null, AimVcam stays where it is.")]
-    public Transform aimPose; // a dummy transform in scene with your desired fixed pose
+    [Header("General Settings")]
+    [Tooltip("Priority for the active camera.")]
+    public int activePriority = 30;
 
-    [Header("Priorities")]
-    public int aimPriority = 20;
-    public int followPriority = 30;
+    [Tooltip("Priority for all inactive cameras.")]
+    public int inactivePriority = 10;
 
-    [Header("Follow Settings")]
-    [Tooltip("If true, set Follow and LookAt to the launched target on shot.")]
+    [Tooltip("If true, InGame cameras will auto-assign Follow/LookAt.")]
     public bool assignFollowTargets = true;
 
-    [Tooltip("Optional: a different transform to LookAt (e.g., a look-ahead). Leave null to LookAt the target.")]
+    [Tooltip("Optional: Override LookAt for gameplay camera (e.g., look-ahead point).")]
     public Transform customLookAt;
+
+    [Header("Optional Slingshot Hook")]
+    public SlingshotController slingshot;
+
+    // ---------- State ----------
+    //public GameCameraMode CurrentMode { get; private set; } = GameCameraMode.OutGame;
+    public GameCameraMode CurrentMode = GameCameraMode.OutGame;
+
+    private readonly Dictionary<GameCameraMode, CinemachineCamera> _camLookup = new();
+
+    private void Awake()
+    {
+        // Build lookup dictionary from editor list
+        _camLookup.Clear();
+        foreach (var entry in cameraTable)
+        {
+            if (entry.camera == null) continue;
+            if (_camLookup.ContainsKey(entry.mode)) continue;
+            _camLookup.Add(entry.mode, entry.camera);
+        }
+    }
 
     private void OnEnable()
     {
         if (slingshot != null)
         {
-            slingshot.OnEnterSlingshotMode.AddListener(OnEnterSlingshotMode);
+            slingshot.OnEnterGameMode += OnEnterSlingshotMode;
+            slingshot.OnEnterEndMode += OnEndStart;
             slingshot.OnShotStarted += OnShotStarted;
+            slingshot.OnLaunchStarted += OnLaunchSarted;
+            slingshot.OnReleaseStarted += OnReleaseStarted;
         }
     }
 
@@ -41,51 +77,113 @@ public class SlingshotCinemachineBridge : MonoBehaviour
     {
         if (slingshot != null)
         {
-            slingshot.OnEnterSlingshotMode.RemoveListener(OnEnterSlingshotMode);
+            slingshot.OnEnterGameMode -= OnEnterSlingshotMode;
+            slingshot.OnEnterEndMode -= OnEndStart;
             slingshot.OnShotStarted -= OnShotStarted;
+            slingshot.OnLaunchStarted -= OnLaunchSarted;
+            slingshot.OnReleaseStarted -= OnReleaseStarted;
+
         }
     }
 
-    private void OnEnterSlingshotMode()
+    // ---------- Public API ----------
+    public void SetCameraMode(GameCameraMode mode)
     {
-        if (aimVcam != null)
+        SetCameraMode(mode, null, null);
+    }
+
+
+    public void SetCameraMode(GameCameraMode mode, Transform follow, Transform lookAt)
+    {
+        CurrentMode = mode;
+
+        // Set all inactive first
+        foreach (var kvp in _camLookup)
         {
-            if (aimPose != null)
-            {
-                aimVcam.transform.SetPositionAndRotation(aimPose.position, aimPose.rotation);
-            }
-
-            // Fixed cam: no Follow/LookAt
-            aimVcam.Follow = null;
-            aimVcam.LookAt = null;
-
-            aimVcam.Priority = aimPriority;
+            SetCamInactive(kvp.Value);
         }
 
-        if (followVcam != null)
+        if (!_camLookup.TryGetValue(mode, out var cam) || cam == null)
         {
-            // Keep follow vcam “armed” but lower priority
-            followVcam.Priority = Mathf.Min(aimPriority - 1, followPriority - 1);
+            Debug.LogWarning($"[SlingshotCinemachineBridge] No camera registered for mode {mode}");
+            return;
+        }
+
+        // Activate current one
+        if (follow || lookAt)
+        {
+            ActivateFollowCam(cam, follow, lookAt);
+        }
+        else
+        {
+            ActivateFixedCam(cam);
         }
     }
 
+    public void OnReleaseStarted(Transform target)
+    {
+        Debug.Log("OnReleaseStarted");
+
+        Transform follow = assignFollowTargets ? target : null;
+        Transform lookAt = assignFollowTargets ? (customLookAt != null ? customLookAt : target) : null;
+        SetCameraMode(GameCameraMode.InGame, follow, lookAt);
+    }
+    public void OnEndStart(Transform target)
+    {
+        Transform follow = assignFollowTargets ? target : null;
+        Transform lookAt = assignFollowTargets ? (customLookAt != null ? customLookAt : target) : null;
+        SetCameraMode(GameCameraMode.EndGame, follow, lookAt);
+    }
+    // ---------- Slingshot hooks ----------
+    private void OnEnterSlingshotMode(Transform target)
+    {
+
+        Debug.Log("OnEnterSlingshotMode");
+
+        SetCameraMode(GameCameraMode.PreGame);
+    }
+
+    private void OnLaunchSarted(Transform target)
+    {
+        //return;
+        // Transform follow = assignFollowTargets ? target : null;
+        // Transform lookAt = assignFollowTargets ? (customLookAt != null ? customLookAt : target) : null;
+        // SetCameraMode(GameCameraMode.InGame, follow, lookAt);
+    }
     private void OnShotStarted(Transform target)
     {
-        if (followVcam != null)
-        {
-            if (assignFollowTargets && target != null)
-            {
-                followVcam.Follow = target;
-                followVcam.LookAt = customLookAt != null ? customLookAt : target;
-            }
+        //Debug.Log("OnShotStarted");
 
-            followVcam.Priority = followPriority;
+        // Transform follow = assignFollowTargets ? target : null;
+        // Transform lookAt = assignFollowTargets ? (customLookAt != null ? customLookAt : target) : null;
+        //SetCameraMode(GameCameraMode.PreGame);
+    }
+
+    // ---------- Internals ----------
+    private void ActivateFixedCam(CinemachineCamera cam)
+    {
+        if (!cam) return;
+        cam.Follow = null;
+        cam.LookAt = null;
+        cam.Priority = activePriority;
+    }
+
+    private void ActivateFollowCam(CinemachineCamera cam, Transform follow, Transform lookAt)
+    {
+        if (!cam) return;
+
+        if (assignFollowTargets)
+        {
+            if (follow) cam.Follow = follow;
+            cam.LookAt = lookAt != null ? lookAt : follow;
         }
 
-        if (aimVcam != null)
-        {
-            // Lower the aim cam so the follow cam takes over
-            aimVcam.Priority = Mathf.Min(aimPriority - 1, followPriority - 1);
-        }
+        cam.Priority = activePriority;
+    }
+
+    private void SetCamInactive(CinemachineCamera cam)
+    {
+        if (!cam) return;
+        cam.Priority = inactivePriority;
     }
 }
