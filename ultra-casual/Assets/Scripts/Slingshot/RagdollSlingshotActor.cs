@@ -157,6 +157,97 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         OnReleaseStart?.Invoke();
     }
 
+    public void ApplyForce(
+        Vector3 worldForce,
+        ForceMode mode = ForceMode.Impulse,
+        Vector3? applicationPoint = null,
+        bool forceSwitchToRagdoll = false,
+        bool hipsOnly = false,
+        bool toLauncher = false
+    )
+    {
+        if (toLauncher && launcherBody != null)
+        {
+            if (applicationPoint.HasValue)
+            {
+                launcherBody.AddForceAtPosition(worldForce, applicationPoint.Value, mode);
+            }
+            else
+            {
+                launcherBody.AddForce(worldForce, mode);
+            }
+            return;
+        }
+
+        // If requested, switch before applying to ragdoll
+        if (forceSwitchToRagdoll && !_hasSwitched)
+        {
+            ForceSwitchToRagdoll();
+        }
+
+        // If we still haven't switched and not targeting launcher, default to launcher
+        if (!_hasSwitched)
+        {
+            if (launcherBody != null)
+            {
+                if (applicationPoint.HasValue)
+                {
+                    launcherBody.AddForceAtPosition(worldForce, applicationPoint.Value, mode);
+                }
+                else
+                {
+                    launcherBody.AddForce(worldForce, mode);
+                }
+            }
+            return;
+        }
+
+        // Ragdoll application
+        if (rig == null || rig.Bodies == null || rig.Bodies.Count == 0)
+        {
+            return;
+        }
+
+        if (hipsOnly)
+        {
+            var hips = rig.Hips != null ? rig.Hips : rig.Bodies[0];
+            if (applicationPoint.HasValue)
+            {
+                hips.AddForceAtPosition(worldForce, applicationPoint.Value, mode);
+            }
+            else
+            {
+                hips.AddForce(worldForce, mode);
+            }
+            return;
+        }
+
+        // Spread the force across all bodies to avoid extreme impulses on a single link
+        int count = rig.Bodies.Count;
+        if (count <= 0)
+        {
+            return;
+        }
+
+        Vector3 perBody = worldForce / count;
+        if (applicationPoint.HasValue)
+        {
+            Vector3 p = applicationPoint.Value;
+            for (int i = 0; i < count; i++)
+            {
+                var b = rig.Bodies[i];
+                b.AddForceAtPosition(perBody, p, mode);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var b = rig.Bodies[i];
+                b.AddForce(perBody, mode);
+            }
+        }
+    }
     // ---------------- External switch trigger ----------------
 
     /// <summary>

@@ -49,6 +49,10 @@ public class SlingshotCinemachineBridge : MonoBehaviour
 
     private readonly Dictionary<GameCameraMode, CinemachineCamera> _camLookup = new();
 
+    void Start()
+    {
+        SetCameraMode(CurrentMode);
+    }
     private void Awake()
     {
         // Build lookup dictionary from editor list

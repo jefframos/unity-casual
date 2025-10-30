@@ -28,6 +28,7 @@ public class RagdollRig : MonoBehaviour
     private readonly List<Collider> _colliders = new List<Collider>();
     private readonly List<Snapshot> _pose = new List<Snapshot>();
 
+    public Rigidbody Hips => mainBody;
     public IReadOnlyList<Rigidbody> Bodies => _bodies;
     public IReadOnlyList<Collider> Colliders => _colliders;
 
