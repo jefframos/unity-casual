@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Threading.Tasks;
+using UnityEngine.Rendering;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class GameManager : MonoBehaviour
     public MonoBehaviour gameControllerBehaviour; // must implement IGameController
 
     [Header("UI")]
+    public SlingshotCinemachineBridge cameraBridge;
     public GameUiHandler uiHandler;
     public UiMode startMode = UiMode.MainMenu; // optional: initial state at play
 
@@ -111,6 +113,7 @@ public class GameManager : MonoBehaviour
     /// <summary>Start a new run: reset everything and ask the controller to prep gameplay.</summary>
     public void StartGame()
     {
+        cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.PreGame);
         _gameController?.ResetGameState();
         ResetAll();
 

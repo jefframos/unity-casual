@@ -64,34 +64,3 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 8758690916551799259}
   m_SourcePrefab: {fileID: 100100000, guid: 7d7b6793cdd278a4084fd1e487655b7e, type: 3}
---- !u!1 &7063743252289416628 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 7d7b6793cdd278a4084fd1e487655b7e, type: 3}
-  m_PrefabInstance: {fileID: 7982099008796020965}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &8758690916551799259
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7063743252289416628}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 845c415f3181b4840ab566c40e714752, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isRotating: 1
-  rotateX: 0
-  rotateY: 1
-  rotateZ: 0
-  rotationSpeed: 85.67
-  isFloating: 1
-  useEasingForFloating: 1
-  floatHeight: 1.93
-  floatSpeed: 0.4
-  startScale: {x: 1, y: 1, z: 1}
-  endScale: {x: 1.2, y: 1.2, z: 1.2}
-  isScaling: 1
-  useEasingForScaling: 1
-  scaleLerpSpeed: 1.11

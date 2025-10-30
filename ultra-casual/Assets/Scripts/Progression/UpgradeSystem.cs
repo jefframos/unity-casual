@@ -17,6 +17,7 @@ public class UpgradeSystem : MonoBehaviour
 
     private void Awake()
     {
+        gameObject.transform.SetParent(null);
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
