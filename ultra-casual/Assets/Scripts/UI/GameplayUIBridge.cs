@@ -17,7 +17,7 @@ public class GameplayUIBridge : MonoBehaviour
     public TextMeshProUGUI distanceText;
 
     [Tooltip("Optional progress slider (0..bestDistance). Leave null to ignore.")]
-    public Slider distanceSlider;
+    public ProgressMarker distanceSlider;
 
     [Header("Format")]
     [Tooltip("e.g. \"{0:0.0} m\" or \"{0:0} meters\"")]
@@ -105,7 +105,7 @@ public class GameplayUIBridge : MonoBehaviour
     {
         if (autoHideWhenIdle) SetVisible(true);
         SetDistance(0f);
-        if (distanceSlider) distanceSlider.value = 0f;
+        if (distanceSlider) distanceSlider.SetProgress(0f);
     }
 
     private void HandleDistanceUpdated(float cumulative)
@@ -114,9 +114,8 @@ public class GameplayUIBridge : MonoBehaviour
         if (distanceSlider)
         {
             // Simple heuristic: slider max tracks current best (use your own goal if needed)
-            float max = Mathf.Max(distanceSlider.maxValue, Mathf.Max(cumulative, progress != null ? progress.bestDistance : 0f));
-            distanceSlider.maxValue = max;
-            distanceSlider.value = Mathf.Clamp(cumulative, 0f, max);
+            // float max = Mathf.Max(distanceSlider.maxValue, Mathf.Max(cumulative, progress != null ? progress.bestDistance : 0f));
+            // distanceSlider.maxValue = max;
         }
     }
 
@@ -134,9 +133,12 @@ public class GameplayUIBridge : MonoBehaviour
         SetDistance(distance);
         if (distanceSlider)
         {
-            float max = Mathf.Max(distanceSlider.maxValue, distance);
-            distanceSlider.maxValue = max;
-            distanceSlider.value = Mathf.Clamp(distance, 0f, max);
+            // float max = Mathf.Max(distanceSlider.maxValue, distance);
+            // distanceSlider.maxValue = max;
+            // distanceSlider.value = Mathf.Clamp(distance, 0f, max);
+
+            distanceSlider.SetProgress(Mathf.Clamp(distance / 500f, 0f, 1f));
+
         }
     }
 
@@ -156,6 +158,9 @@ public class GameplayUIBridge : MonoBehaviour
     private void SetDistance(float meters)
     {
         if (distanceText == null) return;
+
+
+        distanceSlider.SetProgress(Mathf.Clamp(meters / 500f, 0f, 1f));
 
         // Protect against bad formats
         string formatted;

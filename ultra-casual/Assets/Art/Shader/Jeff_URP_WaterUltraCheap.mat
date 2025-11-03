@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Jeff_URP_WaterUltraCheap
+  m_Shader: {fileID: 4800000, guid: b84a18c1723fd954abe640d2618ed156, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Normal1:
+        m_Texture: {fileID: 2800000, guid: 93c49e525f8fb7241889eea325f5ef98, type: 3}
+        m_Scale: {x: 0.01, y: 0.01}
+        m_Offset: {x: 0, y: 0}
+    - _Normal2:
+        m_Texture: {fileID: 2800000, guid: 93c49e525f8fb7241889eea325f5ef98, type: 3}
+        m_Scale: {x: 0.01, y: 0.01}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _EnableDepthFade: 1
+    - _FoamDepth: 1.6
+    - _FoamIntensity: 0.075
+    - _FresnelBoost: 0.523
+    - _FresnelPower: 3.67
+    - _GlitterSpeed: 1.45
+    - _NormalStrength: 1.768
+    - _SpecIntensity: 1.155
+    - _SpecSharpness: 14.4
+    m_Colors:
+    - _DeepColor: {r: 0.01360624, g: 0.11176656, b: 0.18490559, a: 0.85}
+    - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
+    - _N1Speed: {r: 0.05, g: 0.03, b: 0, a: 0}
+    - _N2Speed: {r: -0.04, g: 0.02, b: 0, a: 0}
+    - _ShallowColor: {r: 0.3426486, g: 0.76422596, b: 0.9433962, a: 0.85}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

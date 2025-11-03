@@ -141,6 +141,10 @@ public class GameManager : MonoBehaviour
         _restartCts = new CancellationTokenSource();
 
 
+        if (uiHandler != null)
+        {
+            uiHandler.SetMode(UiMode.GameOver); // or UiMode.GameOver / Results
+        }
         await RestartRoutineAsync(final, _restartCts.Token);
 
         // Swap UI to out-of-game or results/menu as you prefer

@@ -21,7 +21,7 @@ MonoBehaviour:
   baseValue: 3.5
   steps:
   - name: Leve1
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 1861efdd84f7190419369871b88fe619, type: 3}
     worldPrefab: {fileID: 0}
     addedCost: 0
     levels:
@@ -36,7 +36,7 @@ MonoBehaviour:
     - addValue: 1.4
       multiplyValue: 1
   - name: Leve2
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 0963d30473282374fb7c1930079a8842, type: 3}
     worldPrefab: {fileID: 0}
     addedCost: 200
     levels:
@@ -51,7 +51,7 @@ MonoBehaviour:
     - addValue: 2.1
       multiplyValue: 1
   - name: Leve3
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 96037830a24fa9a4bb64a88b72e3a31d, type: 3}
     worldPrefab: {fileID: 0}
     addedCost: 400
     levels:
@@ -65,3 +65,33 @@ MonoBehaviour:
       multiplyValue: 1
     - addValue: 3.8
       multiplyValue: 1
+  - name: Level4
+    icon: {fileID: 21300000, guid: 68a5e65e3c193f6449637372c35e83de, type: 3}
+    worldPrefab: {fileID: 0}
+    addedCost: 400
+    levels:
+    - addValue: 4
+      multiplyValue: 1
+    - addValue: 4.2
+      multiplyValue: 1
+    - addValue: 4.4
+      multiplyValue: 1
+    - addValue: 4.6
+      multiplyValue: 1
+    - addValue: 4.8
+      multiplyValue: 1
+  - name: Level5
+    icon: {fileID: 21300000, guid: 5128237059a3cbd4684cf9fefd7004ea, type: 3}
+    worldPrefab: {fileID: 0}
+    addedCost: 400
+    levels:
+    - addValue: 5
+      multiplyValue: 1.1
+    - addValue: 5.2
+      multiplyValue: 1.1
+    - addValue: 5.4
+      multiplyValue: 1.1
+    - addValue: 5.6
+      multiplyValue: 1.1
+    - addValue: 5.8
+      multiplyValue: 1.1

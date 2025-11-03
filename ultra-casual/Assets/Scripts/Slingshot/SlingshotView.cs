@@ -13,10 +13,32 @@ public class SlingshotView : MonoBehaviour
     public bool flipBaselineForward = false;
 
     [Header("Rendering (optional)")]
-    public LineRenderer leftBand;   // draws leftPole -> slingshotable.LeftAnchor
-    public LineRenderer rightBand;  // draws rightPole -> slingshotable.RightAnchor
+    public LineRenderer leftBand;   // draws leftPole -> pouch/anchor
+    public LineRenderer rightBand;  // draws rightPole -> pouch/anchor
+
+    [Header("Band Visibility")]
+    public bool bandsAlwaysVisible = true;
+
+    [Header("Idle Pouch")]
+    [Tooltip("Optional forward offset (in meters) from band center when idle.")]
+    public float idlePouchForwardOffset = 0.0f;
+
+    [Header("Snap Animation")]
+    [Tooltip("Seconds for the snap-back animation.")]
+    public float snapDuration = 0.15f;
+    [Tooltip("Overshoot amount (0 = none, 0.1 = small).")]
+    [Range(0f, 0.5f)] public float snapOvershoot = 0.08f;
+    public AnimationCurve snapCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     private float _polesPlaneY;
+
+    // --- Transient pouch override state ---
+    private bool _overridePouch;
+    private Vector3 _pouchPos;     // current animated pouch position
+    private Vector3 _snapStart;    // where we were pulled to
+    private Vector3 _snapEnd;      // where we should end (idle)
+    private float _snapClock;
+    private float _snapTotal;
 
     private void Awake()
     {
@@ -27,6 +49,29 @@ public class SlingshotView : MonoBehaviour
 
         EnsureBand(ref leftBand, "LeftBand");
         EnsureBand(ref rightBand, "RightBand");
+
+        // Keep the bands visible at all times if requested.
+        if (bandsAlwaysVisible)
+        {
+            SetBandsVisible(true);
+        }
+    }
+
+    private void Update()
+    {
+        // Advance snap animation if active
+        if (_overridePouch)
+        {
+            _snapClock += Time.deltaTime;
+            float t = (_snapTotal <= 1e-5f) ? 1f : Mathf.Clamp01(_snapClock / _snapTotal);
+            float w = snapCurve != null ? snapCurve.Evaluate(t) : t;
+            _pouchPos = Vector3.LerpUnclamped(_snapStart, _snapEnd, w);
+
+            if (t >= 1f)
+            {
+                _overridePouch = false; // resume drawing from real anchors
+            }
+        }
     }
 
     private void EnsureBand(ref LineRenderer lr, string name)
@@ -38,11 +83,14 @@ public class SlingshotView : MonoBehaviour
             lr = go.AddComponent<LineRenderer>();
         }
         lr.positionCount = 2;
-        lr.enabled = false;
+        lr.enabled = bandsAlwaysVisible; // default to visible if always-on
     }
 
     public void SetBandsVisible(bool on)
     {
+        // If we must keep them always visible, ignore attempts to hide.
+        if (bandsAlwaysVisible) on = true;
+
         if (leftBand) leftBand.enabled = on;
         if (rightBand) rightBand.enabled = on;
     }
@@ -88,6 +136,7 @@ public class SlingshotView : MonoBehaviour
 
         return GetBandCenter();
     }
+
     public Vector3 ClampPointBetweenPoles(Vector3 point, float endInset = 0f)
     {
         // Ensure we work on the slingshot plane
@@ -119,8 +168,32 @@ public class SlingshotView : MonoBehaviour
         return along + perp;
     }
 
+    /// <summary>
+    /// Draws bands either to the slingshotable anchors (normal) or to an animated pouch (during snap).
+    /// </summary>
     public void DrawBands(ISlingshotable target)
     {
+        if (!leftPole || !rightPole || leftBand == null || rightBand == null)
+        {
+            return;
+        }
+
+        if (_overridePouch)
+        {
+            // During snap animation, both bands end at the transient pouch position
+            Vector3 pouch = _pouchPos;
+
+            Debug.Log(pouch);
+
+            leftBand.SetPosition(0, leftPole.position);
+            leftBand.SetPosition(1, pouch);
+
+            rightBand.SetPosition(0, rightPole.position);
+            rightBand.SetPosition(1, pouch);
+            return;
+        }
+
+        // Normal drawing to anchors
         if (leftPole && target?.LeftAnchor)
         {
             leftBand.SetPosition(0, leftPole.position);
@@ -132,5 +205,34 @@ public class SlingshotView : MonoBehaviour
             rightBand.SetPosition(0, rightPole.position);
             rightBand.SetPosition(1, target.RightAnchor.position);
         }
+    }
+
+    /// <summary>
+    /// Kicks off a short snap-back animation from the pulled pouch position back to idle center (+forward offset).
+    /// Call this right after Launch.
+    /// </summary>
+    public void PlaySnapFrom(Vector3 pulledPouchWorldPos)
+    {
+        Debug.Log("PlaySnapFrom");
+        Vector3 center = GetBandCenter();
+
+        // Idle slightly forward of the band plane if desired.
+        Vector3 fwd = GetPreferredForward();
+        Vector3 end = center + fwd * Mathf.Max(0f, idlePouchForwardOffset);
+
+        // A tiny overshoot past the end, then the curve eases it in.
+        Vector3 overshootDir = (end - center).sqrMagnitude < 1e-6f ? fwd : (end - center).normalized;
+        Vector3 endWithOvershoot = end + overshootDir * snapOvershoot;
+
+        _snapStart = pulledPouchWorldPos;
+        _snapEnd = endWithOvershoot;
+
+        _pouchPos = _snapStart;
+        _snapClock = 0f;
+        _snapTotal = Mathf.Max(0.01f, snapDuration);
+        _overridePouch = true;
+
+        // Ensure visible
+        SetBandsVisible(true);
     }
 }

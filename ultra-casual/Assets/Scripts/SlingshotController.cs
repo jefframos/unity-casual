@@ -130,14 +130,14 @@ public class SlingshotController : MonoBehaviour, IGameController
 
             if (_isAiming)
             {
-                view.SetBandsVisible(false);
+                //view.SetBandsVisible(false);
                 ExitAimingAndLaunch();
             }
             else
             {
                 // Didn’t reach threshold: fully reset pose
                 HardResetToStartPose();
-                view.SetBandsVisible(false);
+                //view.SetBandsVisible(false);
             }
         }
 
@@ -244,7 +244,7 @@ public class SlingshotController : MonoBehaviour, IGameController
         _startMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
 
         // Bands hidden until we actually enter aiming
-        view.SetBandsVisible(false);
+        //view.SetBandsVisible(false);
         _isAiming = false;
     }
 
@@ -292,7 +292,7 @@ public class SlingshotController : MonoBehaviour, IGameController
         _target.Parent.rotation = Quaternion.LookRotation(forward, view.upAxis);
         _lastClampedDir = forward;
 
-        view.SetBandsVisible(false);
+        view.SetBandsVisible(true);
         view.DrawBands(_target);
     }
 
@@ -300,7 +300,7 @@ public class SlingshotController : MonoBehaviour, IGameController
     {
         _isAiming = true;
         _target?.SetKinematic(true);
-
+        view.SetBandsVisible(true);
         var t = _target.FollowTarget ? _target.FollowTarget : _target.Parent;
         OnEnterGameMode?.Invoke(t);
     }
@@ -350,6 +350,8 @@ public class SlingshotController : MonoBehaviour, IGameController
 
         _target.SetKinematic(false);
         _target.Launch(clampedDir, impulse);
+
+        view.PlaySnapFrom(_pullPoint);
 
         var followT = _target.FollowTarget ? _target.FollowTarget : _target.Parent;
         OnShotStarted?.Invoke(followT);
