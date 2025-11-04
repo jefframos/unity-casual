@@ -17,9 +17,9 @@ public class GameManager : MonoBehaviour
     public SlingshotCinemachineBridge cameraBridge;
     public GameUiHandler uiHandler;
     public UiMode startMode = UiMode.MainMenu; // optional: initial state at play
+    public LevelManager levelManager; // optional: initial state at play
 
     private IGameController _gameController;
-    private readonly List<IResettable> _resettableCache = new();
 
     // Cancellation for the active restart flow
     private CancellationTokenSource _restartCts;
@@ -27,7 +27,6 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         CacheGameController();
-        RebuildResettableCache();
 
         if (uiHandler != null)
         {
@@ -44,6 +43,11 @@ public class GameManager : MonoBehaviour
 
     private void CacheGameController()
     {
+        if (levelManager == null)
+        {
+            levelManager = FindAnyObjectByType<LevelManager>();
+        }
+
         _gameController = null;
 
         if (gameControllerBehaviour != null)
@@ -93,20 +97,6 @@ public class GameManager : MonoBehaviour
         if (uiHandler != null)
         {
             uiHandler.SetMode(UiMode.PreGame);
-        }
-    }
-    public void RebuildResettableCache()
-    {
-        _resettableCache.Clear();
-
-        var all = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
-        foreach (var mb in all)
-        {
-            if (!mb || !mb.isActiveAndEnabled) continue;
-            if (mb is IResettable r)
-            {
-                _resettableCache.Add(r);
-            }
         }
     }
 
@@ -199,10 +189,7 @@ public class GameManager : MonoBehaviour
 
     private void ResetAll()
     {
-        foreach (var r in _resettableCache.ToList())
-        {
-            r.ResetToInitial();
-        }
+        levelManager.ResetAll();
     }
 
     // Quick keyboard test

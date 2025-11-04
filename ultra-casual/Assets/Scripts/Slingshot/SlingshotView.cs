@@ -203,7 +203,6 @@ public class SlingshotView : MonoBehaviour
 
         if (!_overridePouch && target != null && target.LeftAnchor && target.RightAnchor)
         {
-            Debug.Log("DRAW BANDS");
             Vector3 leftEnd = target.LeftAnchor.position;
             Vector3 rightEnd = target.RightAnchor.position;
 
