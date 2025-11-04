@@ -34,19 +34,22 @@ Material:
     m_Ints: []
     m_Floats:
     - _EnableDepthFade: 1
-    - _FoamDepth: 1.6
-    - _FoamIntensity: 0.242
-    - _FresnelBoost: 0.523
-    - _FresnelPower: 3.67
-    - _GlitterSpeed: 1.45
+    - _FoamDepth: 0.32
+    - _FoamIntensity: 0.066
+    - _FresnelBoost: 0.457
+    - _FresnelPower: 3.6
+    - _GlitterSpeed: 1.61
     - _NormalStrength: 1.385
-    - _SpecIntensity: 1.155
-    - _SpecSharpness: 14.4
+    - _SpecIntensity: 0.987
+    - _SpecSharpness: 12
+    - _WaveAmp: 0.237
     m_Colors:
-    - _DeepColor: {r: 0.01360624, g: 0.11176656, b: 0.18490559, a: 0.85}
+    - _DeepColor: {r: 0.08276958, g: 0.22403066, b: 0.5849056, a: 0.85}
     - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
     - _N1Speed: {r: 0.05, g: 0.03, b: 0, a: 0}
     - _N2Speed: {r: -0.04, g: 0.02, b: 0, a: 0}
     - _ShallowColor: {r: 0.3426486, g: 0.76422596, b: 0.9433962, a: 0.85}
+    - _WaveFreq: {r: 1.2, g: 1, b: 1, a: 1}
+    - _WaveSpeed: {r: 2, g: 2, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

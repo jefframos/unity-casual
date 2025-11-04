@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System;
 
 [DisallowMultipleComponent]
 public class UpgradePanelUI : MonoBehaviour
@@ -44,6 +45,25 @@ public class UpgradePanelUI : MonoBehaviour
         _lastSystemCoins = upgradeSystem != null ? upgradeSystem.coins : 0;
         _displayedCoins = _lastSystemCoins;
         UpdateCoinsLabel();
+
+        upgradeSystem.OnUpgradePurchased += OnUpgradePurchased;
+        upgradeSystem.OnReachedMaxLevel += OnReachedMaxLevel;
+        upgradeSystem.OnReachedNextStep += OnReachedNextStep;
+    }
+
+    private void OnUpgradePurchased(UpgradeType type, int arg2, int arg3)
+    {
+        Debug.Log("OnUpgradePurchased" + type);
+    }
+
+    private void OnReachedNextStep(UpgradeType type, int arg2)
+    {
+        Debug.Log("OnReachedNextStep" + type);
+    }
+
+    private void OnReachedMaxLevel(UpgradeType type, int arg2)
+    {
+        Debug.Log("OnReachedMaxLevel" + type);
     }
 
     private void Update()

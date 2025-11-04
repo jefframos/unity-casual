@@ -12,6 +12,15 @@ public class SlingshotController : MonoBehaviour, IGameController
 
     private ISlingshotable _target;
 
+    // --- Add these fields (e.g., under [Header("Refs")] or a new header) ---
+    [Header("Start Offset")]
+    [Tooltip("Optional: explicit world-space point to be used as the slingshot start (projected to poles plane).")]
+    public Transform startPointOverride;
+
+    [Tooltip("If no Transform is provided, offset (meters) on the poles plane. X = right, Y = forward along baseline.")]
+    public Vector2 startOffsetOnPlane = Vector2.zero;
+
+
     [Header("Distances")]
     [Tooltip("Pull radius clamp in meters.")]
     public float maxPullDistance = 5f;
@@ -32,6 +41,7 @@ public class SlingshotController : MonoBehaviour, IGameController
     public bool useUpgradeData = true;  // impulse scale
     public UpgradeType upgradeType = UpgradeType.SLINGSHOT;  // impulse scale
     public float impulsePerMeter = 10f;  // impulse scale
+    public float minImpulse = 5f;  // impulse scale
     public float impulsePerMeterScale = 1f;  // impulse scale
     [Tooltip("Optional: reference forward to bias launch direction (e.g., ramp forward).")]
     public Transform rampForwardRef;
@@ -106,7 +116,7 @@ public class SlingshotController : MonoBehaviour, IGameController
 
     private void Start()
     {
-        ResetToSlingshot();
+        _ = ResetToSlingshot();
     }
 
     private void Update()
@@ -150,7 +160,7 @@ public class SlingshotController : MonoBehaviour, IGameController
         }
 
         // --- While pointer is down: compute pull vector from current mouse ---
-        Vector3 center = view.GetBandCenter();
+        Vector3 center = GetStartCenterOnPlane();
         Vector3 mouseWorld = view.GetMouseWorldOnPolesPlane(Camera.main);
 
         // Raw pull on plane
@@ -228,6 +238,7 @@ public class SlingshotController : MonoBehaviour, IGameController
 
         // Orient with yaw clamp
         _lastClampedDir = AlignToLaunchDirection(center, _pullPoint, baselineFwd);
+        _lastClampedDir = AlignToLaunchDirection(center, _pullPoint, baselineFwd);
 
         // Draw bands
         view.DrawBands(_target);
@@ -238,8 +249,10 @@ public class SlingshotController : MonoBehaviour, IGameController
     private void BeginPreAim()
     {
         // Cache stable references at press time
-        _pressCenter = view.GetBandCenter();
+        // In BeginPreAim()
+        _pressCenter = GetStartCenterOnPlane();
         _pressBaselineFwd = Vector3.ProjectOnPlane(view.GetPreferredForward(), view.upAxis).normalized;
+
 
         // Store initial pose to reset if threshold not met
         _startParentPos = _target.Parent.position;
@@ -283,11 +296,13 @@ public class SlingshotController : MonoBehaviour, IGameController
         }
 
         // Reposition the parent to match the slingshot center
-        Vector3 center = view.GetBandCenter();
+        // In ResetToSlingshot()
+        Vector3 center = GetStartCenterOnPlane();
         _pullPoint = center;
 
         Vector3 currentMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
         _target.Parent.position += (center - currentMid);
+
 
         // Reorient the slingshot target to match the view’s forward
         Vector3 forward = view.GetPreferredForward();
@@ -324,8 +339,11 @@ public class SlingshotController : MonoBehaviour, IGameController
         _isAiming = false;
         if (_target == null) return;
 
-        Vector3 center = view.GetBandCenter();
+        // In ExitAimingAndLaunch()
+        Vector3 center = GetStartCenterOnPlane();
         Vector3 rawDir = Vector3.ProjectOnPlane(center - _pullPoint, view.upAxis);
+        // ... rest unchanged
+
         if (rawDir.sqrMagnitude < 0.0001f) return;
 
         rawDir.Normalize();
@@ -354,7 +372,8 @@ public class SlingshotController : MonoBehaviour, IGameController
             impulseValue = UpgradeSystem.Instance.GetValue(upgradeType);
         }
 
-        float impulse = pullDistance * impulseValue * impulsePerMeterScale;
+        float impulse = pullDistance / maxPullVirtualDistance * Mathf.Max(minImpulse, impulseValue * impulsePerMeterScale);
+
         _target.SetKinematic(false);
         _target.Launch(clampedDir, impulse);
 
@@ -391,11 +410,50 @@ public class SlingshotController : MonoBehaviour, IGameController
         Quaternion yawRot = Quaternion.AngleAxis(clamped, up);
         return (yawRot * baselineFwd).normalized;
     }
+    // --- Add these helpers anywhere in the class (private region is fine) ---
+    private Vector3 GetStartCenterOnPlane()
+    {
+        // Base is the geometric center the view gives you
+        Vector3 baseCenter = view.GetBandCenter();
+
+        // Plane definition (through baseCenter, normal is view.upAxis)
+        Vector3 planeNormal = view.upAxis;
+
+        // If a Transform is provided, project it to the plane and use that
+        if (startPointOverride != null)
+        {
+            return ProjectPointToPlane(startPointOverride.position, baseCenter, planeNormal);
+        }
+
+        // Otherwise, apply a 2D offset on the plane using the view's baseline forward
+        if (startOffsetOnPlane.sqrMagnitude > 0f)
+        {
+            Vector3 baselineFwd = Vector3.ProjectOnPlane(view.GetPreferredForward(), planeNormal).normalized;
+            if (baselineFwd.sqrMagnitude < 1e-6f)
+            {
+                // Fallback to world forward projected, in pathological cases
+                baselineFwd = Vector3.ProjectOnPlane(Vector3.forward, planeNormal).normalized;
+            }
+            Vector3 right = Vector3.Cross(planeNormal, baselineFwd).normalized;
+
+            // X = right, Y = forward (positive Y pushes toward the baseline forward)
+            return baseCenter + right * startOffsetOnPlane.x + baselineFwd * startOffsetOnPlane.y;
+        }
+
+        return baseCenter;
+    }
+
+    private static Vector3 ProjectPointToPlane(Vector3 point, Vector3 planePoint, Vector3 planeNormal)
+    {
+        // Standard point-to-plane projection
+        float dist = Vector3.Dot(point - planePoint, planeNormal);
+        return point - planeNormal * dist;
+    }
 
     // ---------------- IGameController ----------------
     public void ResetGameState()
     {
-        ResetToSlingshot();
+        _ = ResetToSlingshot();
     }
 
     public void EndGame()

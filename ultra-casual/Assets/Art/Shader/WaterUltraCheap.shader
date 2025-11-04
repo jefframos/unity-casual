@@ -13,6 +13,11 @@ Shader "Jeff/URP/WaterUltraCheap"
         _N2Speed ("Normal2 Speed (x,y)", Vector) = (-0.04, 0.02, 0, 0)
         _NormalStrength ("Normal Strength", Range(0,2)) = 0.6
 
+        [Header(Vertex Waves)]
+        _WaveAmp   ("Wave Amplitude (m)", Range(0,2)) = 0.15
+        _WaveFreq  ("Wave Frequencies k1(xz), k2(xz)", Vector) = (1.2, 0.8, 0.6, 1.3)
+        _WaveSpeed ("Wave Speeds (w1,w2)", Vector) = (1.0, 1.4, 0, 0)
+
         [Header(Fresnel)]
         _FresnelPower   ("Fresnel Power", Range(0.1,8)) = 3.0
         _FresnelBoost   ("Fresnel Boost", Range(0,1))   = 0.25
@@ -84,6 +89,11 @@ Shader "Jeff/URP/WaterUltraCheap"
                 float4 _N2Speed;
                 float  _NormalStrength;
 
+                // Vertex waves
+                float  _WaveAmp;
+                float4 _WaveFreq;   // k1(x,z), k2(x,z)
+                float4 _WaveSpeed;  // w1, w2, -, -
+
                 float  _FresnelPower;
                 float  _FresnelBoost;
 
@@ -100,10 +110,31 @@ Shader "Jeff/URP/WaterUltraCheap"
             Varyings vert (Attributes v)
             {
                 Varyings o;
-                float3 posWS = TransformObjectToWorld(v.positionOS.xyz);
+
+                // ---- Vertex sine displacement (object space Y) ----
+                float2 xz = v.positionOS.xz;
+                float t = _Time.y;
+
+                float2 k1 = _WaveFreq.xy;
+                float2 k2 = _WaveFreq.zw;
+
+                // Phase progression via speeds (radians/sec)
+                float w1 = dot(xz, k1) + t * _WaveSpeed.x;
+                float w2 = dot(xz, k2) + t * _WaveSpeed.y;
+
+                float disp = _WaveAmp * 0.5 * (sin(w1) + sin(w2));
+
+                float3 posOS = v.positionOS.xyz;
+                posOS.y += disp;
+
+                float3 posWS = TransformObjectToWorld(posOS);
+
                 o.positionWS = posWS;
                 o.positionCS = TransformWorldToHClip(posWS);
+
+                // Keep original mesh normal; lighting comes from normal maps anyway
                 o.normalWS   = TransformObjectToWorldNormal(v.normalOS);
+
                 o.uv0        = v.uv0;
                 o.screenPos  = ComputeScreenPos(o.positionCS);
                 return o;

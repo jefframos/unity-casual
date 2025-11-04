@@ -48,6 +48,8 @@ public class SlingshotCar : MonoBehaviour, ISlingshotable, IResettable
         if (!rb) rb = GetComponent<Rigidbody>();
         if (!parent) parent = transform;
 
+        Debug.Log(OnLaunchStart);
+        Debug.Log(OnReleaseStart);
         // Optional runtime stability settings
         if (rb)
         {

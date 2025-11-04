@@ -24,14 +24,84 @@ MonoBehaviour:
     icon: {fileID: 0}
     worldPrefab: {fileID: 0}
     addedCost: 0
+    globalAddPerIndex: -0.2
+    useLastValueAsFirst: 1
     levels:
-    - addValue: -0.1
-      multiplyValue: 1
     - addValue: -0.2
-      multiplyValue: 1
-    - addValue: -0.3
       multiplyValue: 1
     - addValue: -0.4
       multiplyValue: 1
-    - addValue: -0.5
+    - addValue: -0.6
+      multiplyValue: 1
+    - addValue: -0.8
+      multiplyValue: 1
+    - addValue: -1
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 0}
+    worldPrefab: {fileID: 0}
+    addedCost: 0
+    globalAddPerIndex: -0.4
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -1.4
+      multiplyValue: 1
+    - addValue: -1.8
+      multiplyValue: 1
+    - addValue: -2.2
+      multiplyValue: 1
+    - addValue: -2.6
+      multiplyValue: 1
+    - addValue: -3
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 0}
+    worldPrefab: {fileID: 0}
+    addedCost: 0
+    globalAddPerIndex: -0.6
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -3.6
+      multiplyValue: 1
+    - addValue: -4.2
+      multiplyValue: 1
+    - addValue: -4.8
+      multiplyValue: 1
+    - addValue: -5.4
+      multiplyValue: 1
+    - addValue: -6
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 0}
+    worldPrefab: {fileID: 0}
+    addedCost: 0
+    globalAddPerIndex: -0.8
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -6.8
+      multiplyValue: 1
+    - addValue: -7.6
+      multiplyValue: 1
+    - addValue: -8.4
+      multiplyValue: 1
+    - addValue: -9.2
+      multiplyValue: 1
+    - addValue: -10
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 0}
+    worldPrefab: {fileID: 0}
+    addedCost: 0
+    globalAddPerIndex: -1
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -11
+      multiplyValue: 1
+    - addValue: -12
+      multiplyValue: 1
+    - addValue: -13
+      multiplyValue: 1
+    - addValue: -14
+      multiplyValue: 1
+    - addValue: -15
       multiplyValue: 1

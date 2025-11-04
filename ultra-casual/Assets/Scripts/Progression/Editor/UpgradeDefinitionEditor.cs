@@ -8,6 +8,38 @@ public class UpgradeDefinitionEditor : Editor
     public override void OnInspectorGUI()
     {
         DrawDefaultInspector();
+
+        EditorGUILayout.Space(10);
+
+        using (new EditorGUILayout.VerticalScope("box"))
+        {
+            EditorGUILayout.LabelField("Batch Tools", EditorStyles.boldLabel);
+
+            if (GUILayout.Button("Apply Global Add Per Index → Level addValue"))
+            {
+                var def = (UpgradeDefinition)target;
+
+                // Register the root asset for undo (covers nested serializable fields)
+                Undo.RegisterCompleteObjectUndo(def, "Apply Global Add Per Index");
+                def.ApplyGlobalAddsToLevels();
+
+                // Mark only the root ScriptableObject as dirty
+                EditorUtility.SetDirty(def);
+                AssetDatabase.SaveAssets();
+            }
+
+            if (GUILayout.Button("Revert ALL Level addValue to 1"))
+            {
+                var def = (UpgradeDefinition)target;
+
+                Undo.RegisterCompleteObjectUndo(def, "Revert addValue to 1");
+                def.RevertAllAddValuesToOne();
+
+                EditorUtility.SetDirty(def);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
         EditorGUILayout.Space(10);
         DrawPreviewTable((UpgradeDefinition)target);
     }
@@ -33,13 +65,13 @@ public class UpgradeDefinitionEditor : Editor
         EditorGUILayout.LabelField("Cost", header, GUILayout.Width(80));
         EditorGUILayout.LabelField("Value", header, GUILayout.Width(90));
         EditorGUILayout.LabelField("Added", header, GUILayout.Width(60));
+        EditorGUILayout.LabelField("gAdd/Idx", header, GUILayout.Width(70));
         EditorGUILayout.EndHorizontal();
 
         int global = 0;
         foreach (var step in def.steps)
         {
-            if (step == null || step.levels == null)
-                continue;
+            if (step == null || step.levels == null) continue;
 
             for (int i = 0; i < step.levels.Length; i++)
             {
@@ -53,6 +85,7 @@ public class UpgradeDefinitionEditor : Editor
                 EditorGUILayout.LabelField(cost.ToString(), row, GUILayout.Width(80));
                 EditorGUILayout.LabelField(val.ToString("0.###"), row, GUILayout.Width(90));
                 EditorGUILayout.LabelField("+" + step.addedCost, row, GUILayout.Width(60));
+                EditorGUILayout.LabelField(step.globalAddPerIndex.ToString("0.###"), row, GUILayout.Width(70));
                 EditorGUILayout.EndHorizontal();
 
                 global++;
