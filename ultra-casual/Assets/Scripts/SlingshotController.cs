@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -14,6 +15,7 @@ public class SlingshotController : MonoBehaviour, IGameController
     [Header("Distances")]
     [Tooltip("Pull radius clamp in meters.")]
     public float maxPullDistance = 5f;
+    public float maxPullVirtualDistance = 10f;
     public float minPullDistance = 1f;
     public float polesEndInset = 0.05f;
     public bool capWithinPoles = true;
@@ -30,6 +32,7 @@ public class SlingshotController : MonoBehaviour, IGameController
     public bool useUpgradeData = true;  // impulse scale
     public UpgradeType upgradeType = UpgradeType.SLINGSHOT;  // impulse scale
     public float impulsePerMeter = 10f;  // impulse scale
+    public float impulsePerMeterScale = 1f;  // impulse scale
     [Tooltip("Optional: reference forward to bias launch direction (e.g., ramp forward).")]
     public Transform rampForwardRef;
 
@@ -245,6 +248,7 @@ public class SlingshotController : MonoBehaviour, IGameController
 
         // Bands hidden until we actually enter aiming
         //view.SetBandsVisible(false);
+        view.DrawBands(_target);
         _isAiming = false;
     }
 
@@ -270,7 +274,7 @@ public class SlingshotController : MonoBehaviour, IGameController
         _target.Parent.rotation = _startParentRot;
     }
 
-    public void ResetToSlingshot()
+    public async UniTask ResetToSlingshot()
     {
         if (_target == null || view == null || _target.LeftAnchor == null || _target.RightAnchor == null || _target.Parent == null)
         {
@@ -278,21 +282,30 @@ public class SlingshotController : MonoBehaviour, IGameController
             return;
         }
 
+        // Reposition the parent to match the slingshot center
         Vector3 center = view.GetBandCenter();
         _pullPoint = center;
 
         Vector3 currentMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
         _target.Parent.position += (center - currentMid);
 
+        // Reorient the slingshot target to match the view’s forward
         Vector3 forward = view.GetPreferredForward();
         if (forward.sqrMagnitude < 0.0001f)
         {
             forward = _target.Parent.forward;
         }
+
         _target.Parent.rotation = Quaternion.LookRotation(forward, view.upAxis);
         _lastClampedDir = forward;
 
+        // Make sure bands are visible again
         view.SetBandsVisible(true);
+
+        // Wait one frame before re-drawing (allow transforms/animators to update)
+        await UniTask.Yield(PlayerLoopTiming.LastUpdate);
+
+        // Now redraw the bands
         view.DrawBands(_target);
     }
 
@@ -301,6 +314,7 @@ public class SlingshotController : MonoBehaviour, IGameController
         _isAiming = true;
         _target?.SetKinematic(true);
         view.SetBandsVisible(true);
+        view.DrawBands(_target);
         var t = _target.FollowTarget ? _target.FollowTarget : _target.Parent;
         OnEnterGameMode?.Invoke(t);
     }
@@ -328,14 +342,10 @@ public class SlingshotController : MonoBehaviour, IGameController
             clampedDir = Vector3.Slerp(clampedDir, rampFwd, 0.25f).normalized;
         }
 
-        // float dist = Vector3.Distance(center, _pullPoint);
-        // float pullDistance = Mathf.Clamp(dist, Mathf.Clamp(minPullDistance, 0f, maxPullDistance), maxPullDistance);
-
-
         // Use axis-based back distance
         //Vector3 baselineFwd = Vector3.ProjectOnPlane(view.GetPreferredForward(), view.upAxis).normalized;
         float backAxis = Mathf.Max(0f, Vector3.Dot(center - _pullPoint, baselineFwd)); // same as clampedBack at release time
-        float pullDistance = Mathf.Clamp(backAxis, Mathf.Clamp(minPullDistance, 0f, maxPullDistance), maxPullDistance);
+        float pullDistance = Mathf.Clamp(backAxis, Mathf.Clamp(minPullDistance, 0f, maxPullVirtualDistance), maxPullVirtualDistance);
 
         var impulseValue = impulsePerMeter;
 
@@ -344,10 +354,7 @@ public class SlingshotController : MonoBehaviour, IGameController
             impulseValue = UpgradeSystem.Instance.GetValue(upgradeType);
         }
 
-        float impulse = pullDistance * impulseValue;
-        Debug.Log(impulseValue);
-        Debug.Log(impulse);
-
+        float impulse = pullDistance * impulseValue * impulsePerMeterScale;
         _target.SetKinematic(false);
         _target.Launch(clampedDir, impulse);
 
@@ -372,7 +379,6 @@ public class SlingshotController : MonoBehaviour, IGameController
         Vector3 clampedDir = ClampYawAroundUp(baselineFwd, desiredDir, maxYawDegrees, view.upAxis);
         Quaternion targetRot = Quaternion.LookRotation(clampedDir, view.upAxis);
         _target.Parent.rotation = targetRot;
-
         return clampedDir;
     }
 

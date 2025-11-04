@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: ae5217f7b8fcafc4798078197ec181e8
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 166813
+  packageName: Stylized Explosion Effects 1
+  packageVersion: 1.1
+  assetPath: Assets/FXIFIED/common/Scripts/ExplosionSwitchAndroid.cs
+  uploadId: 399066

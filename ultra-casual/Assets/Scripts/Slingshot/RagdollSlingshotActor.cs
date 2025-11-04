@@ -37,6 +37,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
     private bool _hasSwitched;
 
 
+    public float launchAngleOffset = 0f;
 
     public Transform Parent => parent;
     public Transform LeftAnchor => leftAnchor;
@@ -86,6 +87,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         // Start in aiming state
         EnterAimingPose();
         EnableLauncher(false);
+
+        animator.SetTrigger("reset");
+
     }
 
     private void LateUpdate()
@@ -267,6 +271,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         if (_hasSwitched) return;
         if (rig == null || launcherBody == null) return;
 
+        animator.SetTrigger("jump");
 
         _hasSwitched = true;
         _followLauncher = false;
@@ -306,6 +311,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         launcherBody.isKinematic = true;
         EnableLauncher(false);
 
+        //launcherBody.MoveRotation(Quaternion.Euler(launchAngleOffset, 0, 0));
+        launcherBody.transform.rotation = (Quaternion.Euler(launchAngleOffset, 0, 0));
+
         OnLaunchStart?.Invoke();
     }
 
@@ -327,7 +335,6 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         // Reset transform
         rig.transform.localPosition = Vector3.zero;
         transform.SetPositionAndRotation(_startPos, _startRot);
-
         // Reset launcher
         if (launcherBody != null)
         {
@@ -363,6 +370,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         {
             animator.enabled = true;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.ResetTrigger("jump");
+            animator.SetTrigger("reset");
+            animator.Update(1f);
         }
     }
 
