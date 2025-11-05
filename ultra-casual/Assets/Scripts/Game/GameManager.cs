@@ -32,6 +32,7 @@ public class GameManager : MonoBehaviour
         {
             uiHandler.SetMode(startMode);
         }
+
     }
 
     private void OnDisable()
@@ -89,6 +90,8 @@ public class GameManager : MonoBehaviour
         {
             uiHandler.SetMode(UiMode.InGame);
         }
+
+        PokiBridge.GameplayStart();
     }
     /// <summary>Build the list of scene objects that implement IResettable.</summary>
     public void OnEnterGameMode(Transform launcher)
@@ -114,6 +117,8 @@ public class GameManager : MonoBehaviour
     public void EndGame()
     {
         _gameController?.EndGame();
+
+        PokiBridge.GameplayStop();
 
 
     }
