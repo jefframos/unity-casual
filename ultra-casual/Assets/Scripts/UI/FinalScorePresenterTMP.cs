@@ -9,6 +9,8 @@ public class FinalScorePresenterTMP : FinalScorePresenter
     [Header("UI")]
     public CanvasGroup canvasGroup;
     public TextMeshProUGUI scoreLabel;
+    public GameObject newHighScore;
+    public GameObject tapToContinue;
 
     [Header("Flow")]
     [Tooltip("Minimum time in seconds the score stays visible (unscaled).")]
@@ -35,6 +37,9 @@ public class FinalScorePresenterTMP : FinalScorePresenter
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
         }
+
+        newHighScore.SetActive(false);
+        tapToContinue.SetActive(false);
     }
     public override async UniTask ShowFinalScore(float score)
     {
@@ -49,6 +54,7 @@ public class FinalScorePresenterTMP : FinalScorePresenter
     {
         if (waitForAnyKey)
         {
+            tapToContinue.SetActive(true);
             await WaitForKeyAsync(continueKey, token);
         }
 
@@ -60,6 +66,13 @@ public class FinalScorePresenterTMP : FinalScorePresenter
             await AnimationHelper.FadeCanvasAsync(canvasGroup, 1f, 0f, fadeOutSeconds, token);
         }
 
+        newHighScore.SetActive(false);
+        tapToContinue.SetActive(false);
+
+    }
+    public override void ShowHighscore(float score)
+    {
+        newHighScore.SetActive(true);
     }
 
     public override async UniTask ShowFinalScoreAsync(float score, CancellationToken token)
@@ -111,5 +124,6 @@ public class FinalScorePresenterTMP : FinalScorePresenter
                 await UniTask.Yield(token);
         }
     }
+
 
 }

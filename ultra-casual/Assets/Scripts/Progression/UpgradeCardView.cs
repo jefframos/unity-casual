@@ -29,12 +29,15 @@ public class UpgradeCardView : MonoBehaviour
     private UpgradeSystem _sys;
     private UpgradeDefinition _def;
     private Action _onChanged;
+    public Image backgroundImage;
 
     public void Setup(UpgradeSystem sys, UpgradeDefinition def, Action onChanged)
     {
         _sys = sys;
         _def = def;
         _onChanged = onChanged;
+
+        backgroundImage.color = def.color;
 
         if (_def != null)
         {

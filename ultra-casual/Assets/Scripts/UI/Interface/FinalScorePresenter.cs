@@ -9,6 +9,7 @@ public abstract class FinalScorePresenter : MonoBehaviour
     /// Use the provided token to cancel if needed (scene unload, etc.).
     /// </summary>
     public abstract UniTask ShowFinalScore(float score);
+    public abstract void ShowHighscore(float score);
     public abstract UniTask ShowFinalScoreAsync(float score, CancellationToken token);
     public abstract UniTask AwaitEnd(CancellationToken token);
 }

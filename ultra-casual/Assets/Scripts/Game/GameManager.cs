@@ -118,10 +118,17 @@ public class GameManager : MonoBehaviour
 
     }
 
+    private bool nextIsHighscore = false;
+    public void NewHighscore(float final)
+    {
+        nextIsHighscore = true;
+    }
+
     public void RestartGame(float final)
     {
-        _ = RestartGame(Mathf.CeilToInt(final));
+        _ = RestartGame((int)final);
     }
+
 
     /// <summary>Show final score, then reset and restart gameplay (UniTask flow).</summary>
     public async Task RestartGame(int final)
@@ -142,6 +149,8 @@ public class GameManager : MonoBehaviour
         {
             uiHandler.SetMode(UiMode.OutGame); // or UiMode.GameOver / Results
         }
+
+        nextIsHighscore = false;
     }
 
     private async UniTask RestartRoutineAsync(int final, CancellationToken token)
@@ -159,7 +168,7 @@ public class GameManager : MonoBehaviour
 
             if (endGameOrchestrator != null)
             {
-                await endGameOrchestrator.OrchestrateEnd(runScoreDelta: 10, startScoreValue: final);
+                await endGameOrchestrator.OrchestrateEnd(runScoreDelta: 10, startScoreValue: final, nextIsHighscore);
 
 
             }

@@ -80,12 +80,23 @@ public class EndGameOrchestrator : MonoBehaviour
     /// </summary>
     /// <param name="runScoreDelta">How many points/coins to add/animate this end.</param>
     /// <param name="startScoreValue">Starting value to show in the label before the animation.</param>
-    public async UniTask OrchestrateEnd(int runScoreDelta, int startScoreValue)
+    public async UniTask OrchestrateEnd(int runScoreDelta, int startScoreValue, bool nextIsHighscore)
     {
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
+
+        if (nextIsHighscore)
+        {
+            Debug.LogWarning("New High Score Triggered");
+            if (scorePresenter)
+            {
+                // Start but don't await; coin flights run while the presenter handles UI.
+                scorePresenter.ShowHighscore(startScoreValue);
+            }
+            //await OrchestrateNewHighScore(startScoreValue, _cts.Token);
+        }
         await OrchestrateEndAsync(runScoreDelta, startScoreValue, _cts.Token);
     }
 

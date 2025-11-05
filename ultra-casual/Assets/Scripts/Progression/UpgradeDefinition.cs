@@ -9,6 +9,7 @@ public class UpgradeDefinition : ScriptableObject
     [Header("Identity")]
     public string upgradeId;
     public Sprite icon;
+    public Color color = Color.white;
     public GameObject worldPrefab;
 
     [Header("Economy")]
@@ -173,6 +174,7 @@ public class UpgradeStepData
     [Header("Economy Modifier")]
     [Tooltip("Extra cost added to all levels within this step.")]
     public int addedCost;
+    public float extraValue;
 
     [Header("Auto Add (Global)")]
     [Tooltip("If 1, levels' addValue becomes 1,2,3... If 0, no auto add.")]

@@ -369,7 +369,8 @@ public class SlingshotController : MonoBehaviour, IGameController
 
         if (useUpgradeData)
         {
-            impulseValue = UpgradeSystem.Instance.GetValue(upgradeType);
+            var extra = UpgradeSystem.Instance.GetCurrentStepData(UpgradeType.RAMP).extraValue;
+            impulseValue = UpgradeSystem.Instance.GetValue(upgradeType) + extra;
         }
 
         float impulse = pullDistance / maxPullVirtualDistance * Mathf.Max(minImpulse, impulseValue * impulsePerMeterScale);

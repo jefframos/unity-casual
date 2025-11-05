@@ -171,6 +171,14 @@ public class UpgradeSystem : MonoBehaviour
         return GetStepIndexAtLevel(def, GetLevel(type));
     }
 
+    public UpgradeStepData GetCurrentStepData(UpgradeType type)
+    {
+        if (!_defs.TryGetValue(type, out var def) || def == null) return null;
+        var id = GetStepIndexAtLevel(def, GetLevel(type));
+
+        return def.steps[id];
+    }
+
     /// <summary>Utility to calculate which step a global level belongs to (0-based). -1 if invalid or no steps.</summary>
     public static int GetStepIndexAtLevel(UpgradeDefinition def, int globalLevel)
     {
