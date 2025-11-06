@@ -26,6 +26,7 @@ public class ScalePopOnEnable : MonoBehaviour
 
     private Vector3 _baseScale;
     private Tween _tween;
+    public bool playOnEnable = true;
 
     private void Awake()
     {
@@ -34,6 +35,10 @@ public class ScalePopOnEnable : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!playOnEnable)
+        {
+            return;
+        }
         if (!replayOnEachEnable && _tween != null && _tween.IsPlaying()) return;
 
         PlayPopTween();

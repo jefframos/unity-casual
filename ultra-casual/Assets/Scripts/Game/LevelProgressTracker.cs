@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem.Controls;
 
 [System.Serializable] public class FloatEvent : UnityEvent<float> { }
 
@@ -18,7 +19,7 @@ public class LevelProgressTracker : MonoBehaviour
 
     [Header("Events (for UI/FX)")]
     public UnityEvent OnRunStarted;
-    public FloatEvent OnDistanceUpdated;   // cumulative distance this run
+    public UnityEvent<float, float> OnDistanceUpdated;   // cumulative distance this run
     public FloatEvent OnRunEnded;          // final distance
     public FloatEvent OnNewRecord;         // fired when bestDistance improves
 
@@ -73,12 +74,12 @@ public class LevelProgressTracker : MonoBehaviour
         OnRunStarted?.Invoke();
     }
 
-    private void HandleDistanceUpdated(float cumulative)
+    private void HandleDistanceUpdated(float cumulative, float delta)
     {
-        OnDistanceUpdated?.Invoke(cumulative);
+        OnDistanceUpdated?.Invoke(cumulative, delta);
     }
 
-    private void HandleRunStopped(float finalDistance)
+    private void HandleRunStopped(float finalDistance, float delta)
     {
         runsCompleted++;
         lastDistance = finalDistance;

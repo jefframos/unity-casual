@@ -353,6 +353,7 @@ MonoBehaviour:
   pipOffColor: {r: 0.9843137, g: 0.48931408, b: 0.24313726, a: 1}
   stepsPerLevelForUI: 5
   backgroundImage: {fileID: 5678726724291363964}
+  scalePop: {fileID: 2927784944105909518}
 --- !u!1 &1812557167517718523
 GameObject:
   m_ObjectHideFlags: 0
@@ -2217,6 +2218,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5961990534057768320}
   - component: {fileID: 3232097125683083656}
+  - component: {fileID: 2927784944105909518}
   m_Layer: 5
   m_Name: UpgradeCard
   m_TagString: Untagged
@@ -2263,3 +2265,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_AspectMode: 1
   m_AspectRatio: 0.79
+--- !u!114 &2927784944105909518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8915367952270687589}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 243772107ce168b4da24775395636b85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  popScaleMultiplier: 1.1
+  popDuration: 0.35
+  popEase: 27
+  startFromZero: 0
+  replayOnEachEnable: 0
+  playOnEnable: 0

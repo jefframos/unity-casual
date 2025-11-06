@@ -30,6 +30,7 @@ public class UpgradeCardView : MonoBehaviour
     private UpgradeDefinition _def;
     private Action _onChanged;
     public Image backgroundImage;
+    public ScalePopOnEnable scalePop;
 
     public void Setup(UpgradeSystem sys, UpgradeDefinition def, Action onChanged)
     {
@@ -64,8 +65,12 @@ public class UpgradeCardView : MonoBehaviour
             {
                 if (_sys == null || _def == null) return;
                 // normal upgrade (respects cost). For debug “free” path, call IncreaseLevelForce from a different UI.
-                _sys.TryUpgrade(_def.type);
+                var up = _sys.TryUpgrade(_def.type);
                 Refresh();
+                if (up)
+                {
+                    scalePop?.PlayPopTween();
+                }
                 _onChanged?.Invoke();
             });
         }
@@ -89,7 +94,7 @@ public class UpgradeCardView : MonoBehaviour
 
         // Value & Cost
         if (valueText) valueText.text = $"{value:0.###}";
-        if (costText) costText.text = $"{nextCost}";
+        if (costText) costText.text = _def.IsMaxLevel(level) ? "MAX" : $"{nextCost}";
 
         // Level label: UI representation (e.g., 5 sub-steps per 'Level X')
         if (levelText)

@@ -22,7 +22,7 @@ MonoBehaviour:
   baseValue: -20
   steps:
   - name: 
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: f79b90c9533887c4ab0fb87f9d347c5f, type: 3}
     worldPrefab: {fileID: 3861126983884939448, guid: c6f2ea0c1b27c2d4b9f68e4053308bbf, type: 3}
     addedCost: 0
     extraValue: 0
@@ -40,7 +40,7 @@ MonoBehaviour:
     - addValue: -1
       multiplyValue: 1
   - name: 
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: f5db836ad5af80d4887088bf2be2502a, type: 3}
     worldPrefab: {fileID: 2356232428310043528, guid: 0ed36a228c3790340ab31f9f7e549d92, type: 3}
     addedCost: 0
     extraValue: 3
@@ -58,7 +58,7 @@ MonoBehaviour:
     - addValue: -3
       multiplyValue: 1
   - name: 
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 3f6b7be49647a004c85780f3477e7eb6, type: 3}
     worldPrefab: {fileID: 2976809907342854954, guid: 96a26f2adc2499c468fde6b0ebfc0288, type: 3}
     addedCost: 0
     extraValue: 6
@@ -76,7 +76,7 @@ MonoBehaviour:
     - addValue: -6
       multiplyValue: 1
   - name: 
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 81e2588704c65d443b0d4e770b11830b, type: 3}
     worldPrefab: {fileID: 1636676569000035558, guid: 338f1ef98cea46f4a89db1846bb87a66, type: 3}
     addedCost: 0
     extraValue: 9
@@ -94,7 +94,7 @@ MonoBehaviour:
     - addValue: -10
       multiplyValue: 1
   - name: 
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 2e44d6f4005df90428553f080f0a2011, type: 3}
     worldPrefab: {fileID: 2739472166706228045, guid: 69b4532d9c0a7ef48bc5a8cf3bc5d13b, type: 3}
     addedCost: 0
     extraValue: 12

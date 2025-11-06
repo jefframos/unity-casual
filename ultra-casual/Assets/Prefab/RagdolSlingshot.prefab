@@ -440,6 +440,10 @@ PrefabInstance:
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: -2049929814205202405, guid: e2849e7238d4cbf4fab99679b85604aa, type: 3}
+      propertyPath: m_RenderingLayerMask
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -2049929814205202405, guid: e2849e7238d4cbf4fab99679b85604aa, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1
       objectReference: {fileID: 0}

@@ -69,6 +69,15 @@ public class UpgradeDefinition : ScriptableObject
         return Mathf.RoundToInt(cost);
     }
 
+    /// <summary>
+    /// Returns true if the given global level index is at or beyond the maximum available level.
+    /// </summary>
+    public bool IsMaxLevel(int globalLevel)
+    {
+        // TotalLevels gives the number of available levels (0-based index means last valid is TotalLevels - 1)
+        return globalLevel >= TotalLevels - 1;
+    }
+
     public float GetValueForLevel(int globalLevel)
     {
         var data = GetLevelData(globalLevel, out _);

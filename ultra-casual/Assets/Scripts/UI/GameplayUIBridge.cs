@@ -46,7 +46,7 @@ public class GameplayUIBridge : MonoBehaviour
     {
         WireEvents();
         if (autoHideWhenIdle) SetVisible(false);
-        SetDistance(0f);
+        SetDistance(0f, 0f);
     }
 
     private void OnDisable()
@@ -104,13 +104,13 @@ public class GameplayUIBridge : MonoBehaviour
     private void HandleRunStarted()
     {
         if (autoHideWhenIdle) SetVisible(true);
-        SetDistance(0f);
+        SetDistance(0f, 0f);
         if (distanceSlider) distanceSlider.SetProgress(0f);
     }
 
-    private void HandleDistanceUpdated(float cumulative)
+    private void HandleDistanceUpdated(float cumulative, float delta)
     {
-        SetDistance(cumulative);
+        SetDistance(cumulative, delta);
         if (distanceSlider)
         {
             // Simple heuristic: slider max tracks current best (use your own goal if needed)
@@ -121,46 +121,46 @@ public class GameplayUIBridge : MonoBehaviour
 
     private void HandleRunEnded(float finalDistance)
     {
-        SetDistance(finalDistance);
+        SetDistance(finalDistance, 0f);
         if (autoHideWhenIdle) SetVisible(false);
     }
 
     // -------- Fallback direct to motion tracker --------
-    private void TotalDistanceChanged(float distance)
+    private void TotalDistanceChanged(float distance, float delta)
     {
         if (autoHideWhenIdle) SetVisible(true);
 
-        SetDistance(distance);
+        SetDistance(distance, delta);
         if (distanceSlider)
         {
             // float max = Mathf.Max(distanceSlider.maxValue, distance);
             // distanceSlider.maxValue = max;
             // distanceSlider.value = Mathf.Clamp(distance, 0f, max);
 
-            distanceSlider.SetProgress(Mathf.Clamp(distance / 500f, 0f, 1f));
+            distanceSlider.SetProgress(Mathf.Clamp(delta, 0f, 1f));
 
         }
     }
 
-    private void HandleDistanceChanged_Fallback(float cumulative)
+    private void HandleDistanceChanged_Fallback(float cumulative, float delta)
     {
 
     }
 
-    private void HandleStopped_Fallback(float final)
+    private void HandleStopped_Fallback(float final, float delta)
     {
-        SetDistance(final);
+        SetDistance(final, delta);
         if (autoHideWhenIdle) SetVisible(false);
     }
 
     // -------- UI helpers --------
 
-    private void SetDistance(float meters)
+    private void SetDistance(float meters, float delta)
     {
         if (distanceText == null) return;
 
 
-        distanceSlider.SetProgress(Mathf.Clamp(meters / 500f, 0f, 1f));
+        distanceSlider.SetProgress(Mathf.Clamp(delta, 0f, 1f));
 
         // Protect against bad formats
         string formatted;

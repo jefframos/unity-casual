@@ -226,6 +226,9 @@ public class EndGameOrchestrator : MonoBehaviour
         {
             // Start but don't await; coin flights run while the presenter handles UI.
             await scorePresenter.AwaitEnd(token);
+
+
+            await PokiBridge.CommercialBreakAsync();
         }
         // Small hedge so late tweens can complete nicely
         await UniTask.Delay(TimeSpan.FromSeconds(0.1f), DelayType.UnscaledDeltaTime, PlayerLoopTiming.Update, token);

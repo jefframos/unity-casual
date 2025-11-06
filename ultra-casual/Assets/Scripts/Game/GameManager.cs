@@ -149,6 +149,11 @@ public class GameManager : MonoBehaviour
         }
         await RestartRoutineAsync(final, _restartCts.Token);
 
+
+        if (nextIsHighscore)
+        {
+            uiHandler.SetNewHighscore(final);
+        }
         // Swap UI to out-of-game or results/menu as you prefer
         if (uiHandler != null)
         {

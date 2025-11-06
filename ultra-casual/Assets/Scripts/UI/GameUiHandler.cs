@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -34,8 +36,12 @@ public class GameUiHandler : MonoBehaviour
     public UiMode CurrentMode { get; private set; }
     private readonly HashSet<GameObject> _allPanels = new HashSet<GameObject>();
 
+    public TextMeshProUGUI highscoreText;
+    public string highscoreFormat = "{0:0.0} m";
+
     private void Awake()
     {
+        highscoreText.text = string.Format(highscoreFormat, 0f);
         RebuildCache();
         // Do not force a mode here; let the GameManager decide initial mode.
     }
@@ -149,5 +155,10 @@ public class GameUiHandler : MonoBehaviour
             if (!p) continue;
             p.SetActive(false);
         }
+    }
+
+    internal void SetNewHighscore(int final)
+    {
+        highscoreText.text = string.Format(highscoreFormat, final);
     }
 }

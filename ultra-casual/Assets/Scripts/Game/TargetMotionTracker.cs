@@ -25,9 +25,10 @@ public class TargetMotionTracker : MonoBehaviour
     public float totalDistance { get; private set; }
 
     // Events
-    public event Action<float> DistanceChanged;  // cumulative distance updates
-    public event Action<float> Stopped;          // final cumulative distance on stop
-    public event Action<float> TotalDistanceChanged;
+    public event Action<float, float> DistanceChanged;  // cumulative distance updates
+    public event Action<float, float> Stopped;          // final cumulative distance on stop
+    public event Action<float, float> TotalDistanceChanged;
+    public float MaxDistance = 1000f;
     private Vector3 _lastPos;
     private Vector3 _startPos;
     private float _belowThresholdTimer;
@@ -74,8 +75,8 @@ public class TargetMotionTracker : MonoBehaviour
         {
             _lastPos = trackedTransform.position;
             _startPos = _lastPos;      // capture start point
-            DistanceChanged?.Invoke(DistanceTravelled);
-            TotalDistanceChanged?.Invoke(totalDistance);
+            DistanceChanged?.Invoke(DistanceTravelled, DistanceTravelled / MaxDistance);
+            TotalDistanceChanged?.Invoke(totalDistance, totalDistance / MaxDistance);
         }
     }
 
@@ -84,7 +85,7 @@ public class TargetMotionTracker : MonoBehaviour
         if (!IsTracking) return;
         IsTracking = false;
         if (fireStoppedEvent)
-            Stopped?.Invoke(totalDistance);
+            Stopped?.Invoke(totalDistance, totalDistance / MaxDistance);
     }
 
     private void FixedUpdate()
@@ -105,7 +106,7 @@ public class TargetMotionTracker : MonoBehaviour
         if (step > 0f)
         {
             DistanceTravelled += step;
-            DistanceChanged?.Invoke(DistanceTravelled);
+            DistanceChanged?.Invoke(DistanceTravelled, DistanceTravelled / MaxDistance);
             _lastPos = current;
         }
 
@@ -117,7 +118,7 @@ public class TargetMotionTracker : MonoBehaviour
             s.y = 0f; c.y = 0f;
         }
         totalDistance = Vector3.Distance(s, c);
-        TotalDistanceChanged?.Invoke(totalDistance);
+        TotalDistanceChanged?.Invoke(totalDistance, totalDistance / MaxDistance);
 
         // Stop detection (Unity 6: use linearVelocity when Rigidbody is available)
         float speed;
