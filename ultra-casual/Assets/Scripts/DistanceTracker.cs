@@ -13,6 +13,6 @@ public class DistanceTracker : MonoBehaviour
 
     void OnGUI()
     {
-        GUI.Label(new Rect(20, 20, 200, 40), $"Distance: {maxDistance:F2}m");
+        //GUI.Label(new Rect(20, 20, 200, 40), $"Distance: {maxDistance:F2}m");
     }
 }

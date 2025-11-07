@@ -7,6 +7,8 @@ using UnityEngine.InputSystem.Controls;
 [DisallowMultipleComponent]
 public class LevelProgressTracker : MonoBehaviour
 {
+    public static LevelProgressTracker Instance { get; private set; }
+
     [Header("Refs")]
     public GameManager gameManager;
     public SlingshotController controller;
@@ -16,6 +18,7 @@ public class LevelProgressTracker : MonoBehaviour
     public int runsCompleted;
     public float bestDistance;
     public float lastDistance;
+    public float currentDistance;
 
     [Header("Events (for UI/FX)")]
     public UnityEvent OnRunStarted;
@@ -32,6 +35,17 @@ public class LevelProgressTracker : MonoBehaviour
 
     private void Awake()
     {
+
+        gameObject.transform.SetParent(null);
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
         if (!controller) controller = FindAnyObjectByType<SlingshotController>();
         if (!motionTracker) motionTracker = FindAnyObjectByType<TargetMotionTracker>();
         if (!gameManager) gameManager = FindAnyObjectByType<GameManager>();
@@ -76,6 +90,7 @@ public class LevelProgressTracker : MonoBehaviour
 
     private void HandleDistanceUpdated(float cumulative, float delta)
     {
+        currentDistance = cumulative;
         OnDistanceUpdated?.Invoke(cumulative, delta);
     }
 

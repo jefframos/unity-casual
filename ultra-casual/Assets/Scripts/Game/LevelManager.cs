@@ -11,6 +11,7 @@ public class LevelManager : MonoBehaviour
 {
 
     private readonly List<IResettable> _resettableCache = new();
+    public LevelBuilder[] levelBuilders;
 
     // Cancellation for the active restart flow
 
@@ -55,6 +56,10 @@ public class LevelManager : MonoBehaviour
 
     public void ResetAll()
     {
+        foreach (var levelBuilder in levelBuilders)
+        {
+            levelBuilder.ResetLevel();
+        }
         foreach (var r in _resettableCache.ToList())
         {
             r.ResetToInitial();

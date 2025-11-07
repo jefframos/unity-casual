@@ -29,6 +29,8 @@ public class SimpleMover : MonoBehaviour
     private Vector3 _startPos;
     private float _timer;
 
+    public bool startRandom = false;
+
     private void Awake()
     {
         _startPos = useLocalPosition ? transform.localPosition : transform.position;
@@ -36,7 +38,12 @@ public class SimpleMover : MonoBehaviour
 
     private void OnEnable()
     {
+        _startPos = useLocalPosition ? transform.localPosition : transform.position;
         _timer = 0f;
+        if (startRandom)
+        {
+            _timer = Random.Range(0f, duration);
+        }
     }
 
     private void Update()

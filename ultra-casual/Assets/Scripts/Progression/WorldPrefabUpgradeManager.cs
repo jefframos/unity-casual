@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-
+using DG.Tweening;
 /// <summary>
 /// Generic manager that swaps prefabs under given roots based on UpgradeSystem steps.
 /// Configure multiple slots, each mapped to a specific UpgradeType and prefab field name(s).
@@ -193,6 +193,8 @@ public class WorldPrefabUpgradeManager : MonoBehaviour
         t.localPosition = slot.spawnLocalPosition;
         t.localRotation = Quaternion.Euler(slot.spawnLocalEuler);
         t.localScale = Vector3.one;
+
+        t.DOPunchScale(Vector3.one * 0.2f, 0.4f, 10, 1f);
 
         slot.spawnedInstance = go;
         slot.lastPrefabRef = prefab;

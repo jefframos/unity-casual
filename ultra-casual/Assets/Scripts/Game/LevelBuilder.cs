@@ -125,6 +125,7 @@ public class LevelBuilder : MonoBehaviour
             float lateral = baseLat + jitter;
 
             Vector3 basePos = along + _right * lateral;
+
             Vector3 pos = basePos;
 
             if (rule.placeOnGround)
@@ -145,6 +146,13 @@ public class LevelBuilder : MonoBehaviour
                 float y = (attempt > 0 && rule.jitterFloatY)
                     ? UnityEngine.Random.Range(rule.floatYRange.x, rule.floatYRange.y)
                     : Mathf.Lerp(rule.floatYRange.x, rule.floatYRange.y, 0.5f);
+
+                if (rule.addPlayerYOffset)
+                {
+                    var p = player != null ? player.position.y : 0f;
+                    y += p;
+                }
+
                 pos.y = y;
             }
 
@@ -186,7 +194,7 @@ public class LevelBuilder : MonoBehaviour
         float playerTrack = 0f;
         if (restartFromPlayer && player != null)
         {
-            playerTrack = ProjectToTrack(player.position);
+            //playerTrack = ProjectToTrack(player.position);
         }
 
         // Reset per-rule cursors
@@ -220,24 +228,21 @@ public class LevelBuilder : MonoBehaviour
 
     private void Update()
     {
-        if (player == null)
-        {
-            return;
-        }
+        if (player == null) return;
 
-        if (player.position.z < minSpawnDistance)
-        {
-            return;
-        }
-        // Keep basis fresh if direction or origin moves/rotates
+        // Keep basis fresh if direction/origin can move
         _dirNorm = trackDirection.sqrMagnitude > 0.0001f ? trackDirection.normalized : Vector3.forward;
         _basis = Quaternion.FromToRotation(Vector3.forward, _dirNorm);
         _right = _basis * Vector3.right;
         _origin = trackOrigin != null ? trackOrigin : transform;
 
+        // Use projected distance along the track
         float playerTrack = ProjectToTrack(player.position);
 
-        // 1) Spawn pass per rule
+        // Early-out based on track distance, not world Z
+        if (playerTrack < minSpawnDistance)
+            return;
+
         for (int i = 0; i < _runtime.Count; i++)
         {
             var rr = _runtime[i];
@@ -431,6 +436,7 @@ public class LevelBuilder : MonoBehaviour
         public GameObject prefab;
 
         [Header("Cadence")]
+        public bool addPlayerYOffset = false;
         public float everyMeters = 50f;
         public float spawnAheadMin = 10f;
         public float spawnAheadMax = 80f;

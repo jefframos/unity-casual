@@ -1,0 +1,317 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6094963978291971872
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1973933658459897755}
+  m_Layer: 0
+  m_Name: Pool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1973933658459897755
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6094963978291971872}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2357408754256477276}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8361228899017043180
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2357408754256477276}
+  - component: {fileID: 2847418837990476552}
+  m_Layer: 0
+  m_Name: LevelBuilder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2357408754256477276
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8361228899017043180}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1973933658459897755}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2847418837990476552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8361228899017043180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebc897fb5823fa348886b34fe5e0e59b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 0}
+  trackOrigin: {fileID: 0}
+  trackDirection: {x: 0, y: 0, z: 1}
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  groundRayStartHeight: 50
+  despawnBehindDistance: 60
+  rules:
+  - prefab: {fileID: 3592697301371231220, guid: 259e07d4b9a420f4b917f9caf1febb83, type: 3}
+    addPlayerYOffset: 0
+    everyMeters: 75
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 50
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 1
+    groundYOffset: 0
+    floatYRange: {x: 0, y: 0}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 0, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 7589848554180403644, guid: 9bc42d00b05854b4cada571f6da9690b, type: 3}
+    addPlayerYOffset: 0
+    everyMeters: 10
+    spawnAheadMin: 150
+    spawnAheadMax: 200
+    initialOffsetMeters: 100
+    lateralRange: {x: -50, y: 50}
+    placeOnGround: 1
+    groundYOffset: 0
+    floatYRange: {x: 0, y: 0}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 0, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 7298791537332816066, guid: 04a10fd2880e1524fba4c1b6dc28f064, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 80
+    spawnAheadMin: 150
+    spawnAheadMax: 180
+    initialOffsetMeters: 200
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 0
+    groundYOffset: 0
+    floatYRange: {x: 0, y: 0}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 0, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 6
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 2854067355588758300, guid: d4a5db2383f820047a0236a2a0b79ed5, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 80
+    spawnAheadMin: 150
+    spawnAheadMax: 180
+    initialOffsetMeters: 200
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 1
+    groundYOffset: 20
+    floatYRange: {x: 20, y: 50}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 0, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 5543203482489310533, guid: 875ba6932db02764db12c3f6285d9cf8, type: 3}
+    addPlayerYOffset: 0
+    everyMeters: 150
+    spawnAheadMin: 150
+    spawnAheadMax: 180
+    initialOffsetMeters: 200
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 1
+    groundYOffset: 0
+    floatYRange: {x: 0, y: 0}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 0, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 6843963219325613796, guid: ffe9f2aa45702a34aa54879b6b3634b4, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 75
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 50
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 0
+    groundYOffset: 10
+    floatYRange: {x: 0, y: 8}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 90, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 2283160536758929856, guid: c2ca5594184c6dc4fbe136b006a8592f, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 100
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 80
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 0
+    groundYOffset: 5
+    floatYRange: {x: 0, y: 8}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 90, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 5172319765819835103, guid: 222cdfe04492c3747aa30629bba9ae7f, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 130
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 150
+    lateralRange: {x: -25, y: 25}
+    placeOnGround: 0
+    groundYOffset: 0
+    floatYRange: {x: 5, y: 8}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 90, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 1760875348724911915, guid: f0c95ca326e4a7a4bbb17cc7228d5fde, type: 3}
+    addPlayerYOffset: 0
+    everyMeters: 160
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 60
+    lateralRange: {x: -30, y: 30}
+    placeOnGround: 0
+    groundYOffset: 0
+    floatYRange: {x: 5, y: 6}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 90, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 2884305658453018822, guid: 040861ac405bc7d45a921e771c5077e5, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 180
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 180
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 0
+    groundYOffset: 0
+    floatYRange: {x: 4, y: 8}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 90, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 8217194226434637583, guid: 92ee6cf97cc15cd45b45718883f4a976, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 250
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 180
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 0
+    groundYOffset: 0
+    floatYRange: {x: 4, y: 8}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 90, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 1216063465600026454, guid: 10610ff14f0dbeb4e9f2be85ffd8666e, type: 3}
+    addPlayerYOffset: 1
+    everyMeters: 500
+    spawnAheadMin: 120
+    spawnAheadMax: 150
+    initialOffsetMeters: 350
+    lateralRange: {x: -20, y: 20}
+    placeOnGround: 0
+    groundYOffset: 0
+    floatYRange: {x: 5, y: 8}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 90, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  poolContainer: {fileID: 1973933658459897755}
+  minSpawnDistance: 10
