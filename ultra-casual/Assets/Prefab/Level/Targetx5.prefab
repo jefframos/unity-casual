@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8445865853009286450}
   - component: {fileID: 4456355421167266623}
   - component: {fileID: 6310423506782088891}
+  - component: {fileID: 9173341076705863099}
   m_Layer: 0
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -176,6 +177,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 4456355421167266623}
   m_maskType: 0
+--- !u!114 &9173341076705863099
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1121082680362370655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ef954dcb4d2d8e4288534af1af9d5a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableBend: 1
+  inflateBounds: {x: 5, y: 5, z: 5}
 --- !u!1 &2049480220866938332
 GameObject:
   m_ObjectHideFlags: 0
@@ -457,6 +472,7 @@ MonoBehaviour:
   playerTag: Player
   upgradeSystem: {fileID: 0}
   useTrigger: 1
+  targetTMP: {fileID: 0}
 --- !u!64 &6221839976599309487
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -519,3 +535,4 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  startRandom: 0

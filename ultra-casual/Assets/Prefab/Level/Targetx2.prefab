@@ -194,6 +194,7 @@ MonoBehaviour:
   playerTag: Player
   upgradeSystem: {fileID: 0}
   useTrigger: 1
+  targetTMP: {fileID: 0}
 --- !u!64 &6232655701456617337
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -256,6 +257,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  startRandom: 0
 --- !u!1 &5594380716693914315
 GameObject:
   m_ObjectHideFlags: 0
@@ -354,6 +356,7 @@ GameObject:
   - component: {fileID: 4954293050848675380}
   - component: {fileID: 3040880611522696710}
   - component: {fileID: 4888793269185634810}
+  - component: {fileID: 2217401833503815251}
   m_Layer: 0
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -519,3 +522,17 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 3040880611522696710}
   m_maskType: 0
+--- !u!114 &2217401833503815251
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6089974855370385924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ef954dcb4d2d8e4288534af1af9d5a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableBend: 1
+  inflateBounds: {x: 5, y: 5, z: 5}

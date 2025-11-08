@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -21,9 +22,25 @@ public class CoinsOnHit : MonoBehaviour, IResettable
     [Tooltip("If true, award on trigger enter. If false, award on collision enter.")]
     public bool useTrigger = true;
     private bool awarded = false;
+
+    public TextMeshPro targetTMP;
     /// <summary>
     /// Public helper if you want to award programmatically (e.g., from another script).
     /// </summary>
+    void OnValidate()
+    {
+        if (targetTMP != null)
+        {
+            if (isMultiplier)
+            {
+                targetTMP.text = "x" + value.ToString();
+            }
+            else
+            {
+                targetTMP.text = "x" + ((int)value).ToString();
+            }
+        }
+    }
     public void AddCoins(int amount, Vector3 worldPos)
     {
         var sys = upgradeSystem != null ? upgradeSystem : UpgradeSystem.Instance;

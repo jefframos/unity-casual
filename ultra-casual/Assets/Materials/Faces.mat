@@ -94,6 +94,12 @@ Material:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
+    - _BendEnd: 0
+    - _BendFollowCamera: 0
+    - _BendMax: 50
+    - _BendRadius: 2000
+    - _BendStart: 0
+    - _BendStrength: 0
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 1
@@ -109,6 +115,7 @@ Material:
     - _DrawOrder: 0
     - _DstBlend: 0
     - _DstBlendAlpha: 0
+    - _EdgeFadeStartPct: 0.85
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
@@ -128,6 +135,8 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BendAxis: {r: 0, g: 0, b: 1, a: 0}
+    - _BendOrigin: {r: 0, g: 0, b: 0, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}

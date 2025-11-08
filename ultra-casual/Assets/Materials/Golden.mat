@@ -8,18 +8,17 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Golden
-  m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+  m_Shader: {fileID: 4800000, guid: 38e02bccd831d1a4dbab653c4133621f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
+  m_ValidKeywords: []
+  m_InvalidKeywords:
   - _EMISSION
-  m_InvalidKeywords: []
   m_LightmapFlags: 2
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap:
-    RenderType: Opaque
+  stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
   m_LockedProperties: 
@@ -87,6 +86,12 @@ Material:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
+    - _BendEnd: 0
+    - _BendFollowCamera: 0
+    - _BendMax: 50
+    - _BendRadius: 2000
+    - _BendStart: 0
+    - _BendStrength: 0
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BlendOp: 0
@@ -99,6 +104,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
+    - _EdgeFadeStartPct: 0.85
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
@@ -119,6 +125,8 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 0.76822644, b: 0.118867874, a: 1}
+    - _BendAxis: {r: 0, g: 0, b: 1, a: 0}
+    - _BendOrigin: {r: 0, g: 0, b: 0, a: 1}
     - _Color: {r: 1, g: 0.76822644, b: 0.118867874, a: 1}
     - _EmissionColor: {r: 0.3301887, g: 0.28602377, b: 0.15107691, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}

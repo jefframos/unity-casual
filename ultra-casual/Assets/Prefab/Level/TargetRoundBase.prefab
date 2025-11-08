@@ -97,6 +97,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2384833436726108209}
   - component: {fileID: 1948066539016387998}
+  - component: {fileID: 3394978654975554270}
   - component: {fileID: 5517694883085312712}
   m_Layer: 0
   m_Name: Text (TMP)
@@ -122,7 +123,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -22028}
-  m_SizeDelta: {x: 1.09, y: 0.785}
+  m_SizeDelta: {x: 0.8526, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!23 &1948066539016387998
 MeshRenderer:
@@ -147,7 +148,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 4489022025781274634, guid: a9b507a2395d4438fa1f717db1fbaa1e, type: 2}
+  - {fileID: -5816361352116253987, guid: cca1c247a281664478db9d1c19d95fff, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -169,6 +170,20 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3394978654975554270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2685650969604801665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ef954dcb4d2d8e4288534af1af9d5a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableBend: 1
+  inflateBounds: {x: 5, y: 5, z: 5}
 --- !u!114 &5517694883085312712
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -189,24 +204,24 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: +20
+  m_text: x100
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a9b507a2395d4438fa1f717db1fbaa1e, type: 2}
-  m_sharedMaterial: {fileID: 4489022025781274634, guid: a9b507a2395d4438fa1f717db1fbaa1e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: cca1c247a281664478db9d1c19d95fff, type: 2}
+  m_sharedMaterial: {fileID: -5816361352116253987, guid: cca1c247a281664478db9d1c19d95fff, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_enableVertexGradient: 1
+  m_colorMode: 2
   m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+    topLeft: {r: 1, g: 0.8874891, b: 0, a: 1}
+    topRight: {r: 1, g: 0.8874891, b: 0, a: 1}
+    bottomLeft: {r: 1, g: 0.74320835, b: 0, a: 1}
+    bottomRight: {r: 1, g: 0.74320835, b: 0, a: 1}
   m_fontColorGradientPreset: {fileID: 0}
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
@@ -216,11 +231,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 6.4
+  m_fontSize: 3.55
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 4
+  m_fontSizeMin: 2
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -365,7 +380,7 @@ GameObject:
   - component: {fileID: 5571129786742214600}
   - component: {fileID: 7163210416888193366}
   m_Layer: 0
-  m_Name: Target20
+  m_Name: TargetRoundBase
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -457,6 +472,7 @@ MonoBehaviour:
   playerTag: Player
   upgradeSystem: {fileID: 0}
   useTrigger: 1
+  targetTMP: {fileID: 5517694883085312712}
 --- !u!64 &5571129786742214600
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -519,3 +535,4 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  startRandom: 0
