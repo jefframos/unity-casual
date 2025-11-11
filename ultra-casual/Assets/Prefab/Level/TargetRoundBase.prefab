@@ -379,6 +379,7 @@ GameObject:
   - component: {fileID: 1074587364510431649}
   - component: {fileID: 5571129786742214600}
   - component: {fileID: 7163210416888193366}
+  - component: {fileID: 2395333470024435168}
   m_Layer: 0
   m_Name: TargetRoundBase
   m_TagString: Untagged
@@ -535,4 +536,18 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  startRandom: 0
+  startRandom: 1
+--- !u!114 &2395333470024435168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6843963219325613796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c40206d66a77cf94ea1692d5bf7e5883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  extraExtents: {x: 2, y: 10, z: 2}
+  deriveFromShader: 1

@@ -379,6 +379,7 @@ GameObject:
   - component: {fileID: 2134390052877693156}
   - component: {fileID: 6221839976599309487}
   - component: {fileID: -4204502749036003911}
+  - component: {fileID: 6256678898332606658}
   m_Layer: 0
   m_Name: Targetx5
   m_TagString: Untagged
@@ -535,4 +536,18 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  startRandom: 0
+  startRandom: 1
+--- !u!114 &6256678898332606658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8217194226434637583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c40206d66a77cf94ea1692d5bf7e5883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  extraExtents: {x: 2, y: 10, z: 2}
+  deriveFromShader: 1

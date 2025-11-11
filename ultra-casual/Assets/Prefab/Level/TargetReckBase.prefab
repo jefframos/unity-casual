@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 1624751034084088441}
   - component: {fileID: 1801087831480740034}
   - component: {fileID: 7686314343629250432}
+  - component: {fileID: 6951292461048804758}
   m_Layer: 0
   m_Name: TargetReckBase
   m_TagString: Untagged
@@ -149,7 +150,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  startRandom: 0
+  startRandom: 1
 --- !u!65 &7686314343629250432
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -171,6 +172,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.55, y: 2.0000005, z: 1.0000005}
   m_Center: {x: 0.000000059604645, y: -8.131516e-20, z: -0.00000008940699}
+--- !u!114 &6951292461048804758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1216063465600026454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c40206d66a77cf94ea1692d5bf7e5883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  extraExtents: {x: 2, y: 10, z: 2}
+  deriveFromShader: 1
 --- !u!1 &2076652905936611370
 GameObject:
   m_ObjectHideFlags: 0

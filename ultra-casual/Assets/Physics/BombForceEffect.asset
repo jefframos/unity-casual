@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a036edf29e99523448a0ffbfe2d27008, type: 3}
   m_Name: BombForceEffect
   m_EditorClassIdentifier: 
-  vectorKind: 4
-  direction: {x: 0, y: 0.5, z: 0.5}
-  magnitude: 80
-  forceMode: 1
+  vectorKind: 3
+  direction: {x: 0, y: 0.5, z: 0}
+  magnitude: 150
+  forceMode: 2
   useDistanceFalloff: 0
   falloffRadius: 5
   falloff:

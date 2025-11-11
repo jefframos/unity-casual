@@ -63,7 +63,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 5ae72abb4f5c0814e98a001acc1127bf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 20c593a79fdf4ef428dca41cc02d4628, type: 2}
+      objectReference: {fileID: 2100000, guid: 0d8e9d63502beeb46b1f262a8fce10d1, type: 2}
     - target: {fileID: 919132149155446097, guid: 5ae72abb4f5c0814e98a001acc1127bf, type: 3}
       propertyPath: m_Name
       value: Bouncer
@@ -78,6 +78,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5ae72abb4f5c0814e98a001acc1127bf, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3809599805019190441}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5ae72abb4f5c0814e98a001acc1127bf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -2314055219266415532}
   m_SourcePrefab: {fileID: 100100000, guid: 5ae72abb4f5c0814e98a001acc1127bf, type: 3}
 --- !u!1 &7298791537332816066 stripped
 GameObject:
@@ -120,6 +123,20 @@ MonoBehaviour:
   definition: {fileID: 11400000, guid: 00bbc40d850d56b4b98c17cc5d1c34d5, type: 2}
   localReference: {fileID: 7926709826982892152}
   playerTag: Player
+--- !u!114 &-2314055219266415532
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7298791537332816066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c40206d66a77cf94ea1692d5bf7e5883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  extraExtents: {x: 2, y: 10, z: 2}
+  deriveFromShader: 1
 --- !u!4 &7926709826982892152 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5ae72abb4f5c0814e98a001acc1127bf, type: 3}
