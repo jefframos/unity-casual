@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 7119966899518714790}
   - component: {fileID: 2268612603826280045}
   - component: {fileID: 6629074439313816526}
-  - component: {fileID: 5335590645872594238}
   - component: {fileID: 2448488596251797871}
   - component: {fileID: -3377272836438582750}
+  - component: {fileID: 198073629595737654}
   m_Layer: 0
   m_Name: TNT
   m_TagString: Untagged
@@ -140,21 +140,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5335590645872594238
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5543203482489310533}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a58912902cd8a749a8944cf05b8f987, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  definition: {fileID: 11400000, guid: 96e96f6a06beb1349a700992d7385d04, type: 2}
-  localReference: {fileID: 6864450017445316285}
-  playerTag: Player
 --- !u!114 &2448488596251797871
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -162,7 +147,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5543203482489310533}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c125cf3217ace0f49b689eeb0f3883ff, type: 3}
   m_Name: 
@@ -187,6 +172,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   extraExtents: {x: 2, y: 10, z: 2}
   deriveFromShader: 1
+--- !u!114 &198073629595737654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5543203482489310533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b8cc3c3cc06dc74ebc8bbc88950d31d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  definition: {fileID: 11400000, guid: 09364a83ec389804c9b8f71cda3720cb, type: 2}
+  _isBusy: 0
+  _exploded: 0
+  onArmed:
+    m_PersistentCalls:
+      m_Calls: []
+  onExplodeStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onExplodeFinished:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &5786434203073620481
 GameObject:
   m_ObjectHideFlags: 0

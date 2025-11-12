@@ -85,7 +85,7 @@ MonoBehaviour:
   groundRayStartHeight: 50
   despawnBehindDistance: 60
   rules:
-  - prefab: {fileID: 3592697301371231220, guid: 259e07d4b9a420f4b917f9caf1febb83, type: 3}
+  - prefab: {fileID: 2822093164941881214, guid: 68c874a735e22f34299ab21a3408aa8a, type: 3}
     addPlayerYOffset: 0
     everyMeters: 75
     spawnAheadMin: 120

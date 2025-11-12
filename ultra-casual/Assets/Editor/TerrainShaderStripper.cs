@@ -21,6 +21,7 @@ public class TerrainShaderStripper : IPreprocessShaders
         bool isURPTerrain =
                n.StartsWith("Universal Render Pipeline/Terrain")
             || n.Contains("/TerrainLit")
+            || n.Contains("Terrain")
             || n.Contains("TerrainLitAdd")
             || n.Contains("TerrainLitBase");
 

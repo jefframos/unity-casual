@@ -68,6 +68,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: RagdolSlingshotEnemy Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 2897027448968824677, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
+      propertyPath: m_TagString
+      value: Enemy
+      objectReference: {fileID: 0}
     - target: {fileID: 3267368720290971819, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
       propertyPath: launcherCollisionMode
       value: 3
@@ -128,7 +132,8 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 21300000, guid: 1651d0032d975ec48a280e8a3497a799, type: 3}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3267368720290971819, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
     m_RemovedGameObjects:
     - {fileID: 1099886954758556736, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
     m_AddedGameObjects: []
@@ -163,17 +168,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12e5b05bebdd8a14085f6b72f824ecc9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ragdollSwitcher: {fileID: 1685766003170891368}
+  rig: {fileID: 4798821480283268647}
+  animator: {fileID: 6586797438605514945}
   targetRenderers:
   - {fileID: 7606222735057446219}
-  sourceBody: {fileID: 0}
-  animator: {fileID: 6586797438605514945}
   activeMaterial: {fileID: 2100000, guid: 54c06334946ebb34b9c35778ffb7ef29, type: 2}
   deathMaterial: {fileID: 2100000, guid: d56fde6cd7ca5e643a2341fdb1d9f399, type: 2}
+  sourceBody: {fileID: 0}
+  inheritSourceVelocityOnRagdoll: 1
+  ragdollAngularDamping: 0.5
   grade: 1
-  killImpulseOverride: -1
+  killImpulseOverride: 10
   killOnAnyCollision: 0
-  killOnAnyTrigger: 1
+  killOnAnyTrigger: 0
+  startupGraceTime: 0.2
   ownKillTrigger: {fileID: 0}
   groundMask:
     serializedVersion: 2
@@ -181,13 +189,14 @@ MonoBehaviour:
   groundProbeLocalOffset: {x: 0, y: 0.2, z: 0}
   groundProbeRadius: 0.15
   groundProbeDistance: 0.5
+  enableFallDeath: 1
   minFallSpeed: 0.5
   fallGraceTime: 0.12
   requireWasGroundedBeforeFalling: 0
-  supportMoveSpeedThreshold: 0.75
-  supportAngularSpeedDegThreshold: 90
-  supportSeparationDistance: 0.2
   fallImpactSpeedThreshold: 5
+  supportMoveSpeedThreshold: 3
+  supportAngularSpeedDegThreshold: 90
+  supportSeparationDistance: 0.3
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -214,15 +223,15 @@ CapsuleCollider:
   m_Height: 4.02
   m_Direction: 1
   m_Center: {x: 0, y: 2, z: 0}
---- !u!114 &1685766003170891368 stripped
+--- !u!114 &4798821480283268647 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3267368720290971819, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
+  m_CorrespondingSourceObject: {fileID: 8693595464501080292, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
   m_PrefabInstance: {fileID: 4196525501541832387}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1299643256829841830}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 281c6951a099dfb46bd1bc6a4389a394, type: 3}
+  m_Script: {fileID: 11500000, guid: 2ab841d1fd6cd0642958509bb63d2607, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &5087153666092119501 stripped

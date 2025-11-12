@@ -138,6 +138,14 @@ public class GameManager : MonoBehaviour
     /// <summary>Show final score, then reset and restart gameplay (UniTask flow).</summary>
     public async Task RestartGame(int final)
     {
+
+        // Wait for all chain reactions to finish before ending the level
+        if (ExplosionCoordinator.Instance != null)
+        {
+            await ExplosionCoordinator.Instance.WaitForAllExplosionsAsync();
+        }
+
+
         _restartCts?.Cancel();
         _restartCts?.Dispose();
         _restartCts = new CancellationTokenSource();

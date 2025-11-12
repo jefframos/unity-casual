@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Add to LevelGridData.cs
 [CreateAssetMenu(menuName = "LevelGrid/Level Grid Data")]
 public class LevelGridData : ScriptableObject
 {
@@ -10,14 +11,18 @@ public class LevelGridData : ScriptableObject
 
     [Header("Grid")]
     public Vector2Int gridSize = new Vector2Int(8, 8);
-    [Tooltip("World size per grid cell when baking.")]
     public float cellSize = 1.0f;
 
-    [Serializable]
+    [Header("Depth")]
+    [Tooltip("Number of Z layers (0..Depth-1).")]
+    public int depth = 1;
+
+    [System.Serializable]
     public class PlacedItem
     {
         public PlaceableObjectDef def;
-        public Vector2Int origin; // bottom-left cell of the item
+        public Vector2Int origin;
+        public int layerZ = 0; // <-- which Z layer this item belongs to
     }
 
     [Header("Contents")]
@@ -35,6 +40,14 @@ public class LevelGridData : ScriptableObject
         if (needX != gridSize.x || needY != gridSize.y)
         {
             gridSize = new Vector2Int(needX, needY);
+        }
+    }
+
+    public void EnsureDepth(int zNeeded)
+    {
+        if (zNeeded >= depth)
+        {
+            depth = zNeeded + 1;
         }
     }
 }

@@ -11,6 +11,11 @@ public class ObstacleSet : MonoBehaviour, IResettable
     [Tooltip("If true and list is empty, collect all child rigidbodies at Awake().")]
     public bool autoCollectFromChildren = true;
 
+    [SerializeField, Tooltip("Found IResettable components in children (excluding this).")]
+    private List<MonoBehaviour> _resettablesDebug = new(); // for inspector visibility only
+
+    private readonly List<IResettable> _resettables = new();
+
     [Serializable]
     private struct TransformSnapshot
     {
@@ -36,12 +41,78 @@ public class ObstacleSet : MonoBehaviour, IResettable
 
     private void Awake()
     {
+        RefreshResettables();
+
         if (rigidbodies.Count == 0 && autoCollectFromChildren)
         {
-            rigidbodies.AddRange(GetComponentsInChildren<Rigidbody>(includeInactive: true));
+            // Collect all child RBs, but exclude any inside a (different) IResettable subtree.
+            var all = GetComponentsInChildren<Rigidbody>(includeInactive: true);
+            rigidbodies = FilterRigidbodiesExcludingResettables(all);
+        }
+        else
+        {
+            // If user provided a list, sanitize it with the same rule.
+            rigidbodies = FilterRigidbodiesExcludingResettables(rigidbodies);
         }
 
         CaptureInitial();
+    }
+
+    private void RefreshResettables()
+    {
+        _resettables.Clear();
+
+        // Find all IResettable under us (include inactive), EXCEPT this ObstacleSet instance.
+        var found = GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
+        foreach (var mb in found)
+        {
+            if (mb == null) continue;
+
+            if (mb is IResettable resettable)
+            {
+                // Skip self if attached to the same GameObject.
+                if (ReferenceEquals(resettable, this)) continue;
+
+                _resettables.Add(resettable);
+            }
+        }
+
+        // Optional: keep a debug list for inspector
+        _resettablesDebug.Clear();
+        foreach (var r in _resettables)
+        {
+            if (r is MonoBehaviour mb) _resettablesDebug.Add(mb);
+        }
+    }
+
+    private List<Rigidbody> FilterRigidbodiesExcludingResettables(IEnumerable<Rigidbody> source)
+    {
+        var set = new HashSet<Rigidbody>();
+        foreach (var rb in source)
+        {
+            if (!rb) continue;
+            if (IsInsideOtherResettable(rb.transform)) continue;
+            set.Add(rb);
+        }
+        return new List<Rigidbody>(set);
+    }
+
+    private bool IsInsideOtherResettable(Transform t)
+    {
+        // True if any ancestor (excluding this ObstacleSet's transform root) has an IResettable that isn't 'this'.
+        Transform current = t;
+        while (current != null && current != transform)
+        {
+            if (current.TryGetComponent<MonoBehaviour>(out var mb) && mb is IResettable resettable)
+            {
+                if (!ReferenceEquals(resettable, this))
+                {
+                    return true;
+                }
+            }
+            current = current.parent;
+        }
+        return false;
     }
 
     public void CaptureInitial()
@@ -52,6 +123,7 @@ public class ObstacleSet : MonoBehaviour, IResettable
         foreach (var rb in rigidbodies)
         {
             if (!rb) continue;
+
             var t = rb.transform;
             _xforms[rb] = new TransformSnapshot
             {
@@ -59,6 +131,7 @@ public class ObstacleSet : MonoBehaviour, IResettable
                 localRot = t.localRotation,
                 localScale = t.localScale
             };
+
             _bodies[rb] = new RigidbodySnapshot
             {
                 isKinematic = rb.isKinematic,
@@ -78,7 +151,6 @@ public class ObstacleSet : MonoBehaviour, IResettable
         {
             if (!rb) continue;
 
-            // Temporarily kinematic so we can safely warp transforms.
             var origKin = rb.isKinematic;
 
             // Zero dynamics.
@@ -86,8 +158,11 @@ public class ObstacleSet : MonoBehaviour, IResettable
             rb.SetLinearVelocity(Vector3.zero);
             rb.angularVelocity = Vector3.zero;
 
+            rb.gameObject.SetActive(true);
+
+            // Restore transform under kinematic to avoid impulses.
             rb.isKinematic = true;
-            // Restore transform.
+
             if (_xforms.TryGetValue(rb, out var tx))
             {
                 var tr = rb.transform;
@@ -96,7 +171,6 @@ public class ObstacleSet : MonoBehaviour, IResettable
                 tr.localScale = tx.localScale;
             }
 
-            // Restore RB settings.
             if (_bodies.TryGetValue(rb, out var bs))
             {
                 rb.useGravity = bs.useGravity;
@@ -109,11 +183,9 @@ public class ObstacleSet : MonoBehaviour, IResettable
             }
             else
             {
-                // Fallback to original kinematic state if snapshot missing (shouldn't happen).
                 rb.isKinematic = origKin;
             }
 
-            // Clear any accumulated forces.
             rb.Sleep();
             rb.WakeUp();
         }

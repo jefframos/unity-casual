@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 054b9b0c1b0f8e248b2e136a6c7a855d, type: 3}
+  m_Name: TNTEffector
+  m_EditorClassIdentifier: 
+  radius: 25
+  falloffRadius: 15
+  impactMinSpeed: 5
+  startupGraceSeconds: 0.25
+  requireMovementImpact: 1
+  useAddExplosionForce: 1
+  explosionUpwardsModifier: 0
+  baseForce: 150
+  forceMode: 1
+  scaleByMass: 1
+  randomAngleJitterDeg: 0
+  falloff:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  affectLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  playerTag: Player
+  applicationTarget: 0
+  forceSwitchToRagdollOnHit: 1
+  indirectExplosionDelay: 0.15
+  chainDelay: 0.5
+  destroyAfterExplode: 1
+  destroyAfterSeconds: 0.1
+  vfxPrefab: {fileID: 2483631507836455155, guid: 849fb8196e3739044a55533bee3aedfa, type: 3}
+  sfx: {fileID: 0}
+  sfxVolume: 1
