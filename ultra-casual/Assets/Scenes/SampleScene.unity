@@ -3444,7 +3444,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   applyGlobally: 1
   applyGameModeOnly: 0
-  disableBend: 1
+  disableBend: 0
   originTarget: {fileID: 14530729}
   originOffset: {x: 0, y: 0, z: 0}
   componentMask: {x: 0, y: 0, z: 1}
@@ -3979,7 +3979,7 @@ Mesh:
     m_UVInfo: 0
   m_LocalAABB:
     m_Center: {x: 0, y: 0.0014672875, z: -0.1219151}
-    m_Extent: {x: 282.72562, y: 7276.1157, z: 282.12192}
+    m_Extent: {x: 300.72562, y: 7706.1157, z: 300.12192}
   m_MeshUsageFlags: 0
   m_CookingOptions: 30
   m_BakedConvexCollisionMesh: 

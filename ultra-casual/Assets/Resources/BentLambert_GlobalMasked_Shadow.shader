@@ -4,43 +4,51 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
     {
         _BaseMap ("Base Map", 2D) = "white" {}
         _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-
-        // Exposed so you can flip per - material if desired.
-        // You can also set it globally via Shader.SetGlobalFloat("_WB_DisableBend", 1).
         _WB_DisableBend("Disable Bend (0/1)", Float) = 0
     }
 
     SubShader
     {
-        Tags { "RenderPipeline" = "UniversalRenderPipeline" "RenderType" = "Transparent" "Queue" = "Transparent" }
+        Tags
+        {
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
+        }
+
         LOD 100
         Cull Back
         ZWrite On
         ZTest LEqual
         Blend SrcAlpha OneMinusSrcAlpha
 
-        // -- -- -- -- -- -- -- -- -- -- Forward (lit + shadows) -- -- -- -- -- -- -- -- -- --
+        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
+        // Forward (lit + shadows)
+        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
         Pass
         {
             Name "ForwardBasicShadow"
+            Tags { "LightMode" = "UniversalForward" }
 
             HLSLPROGRAM
-            #pragma target 3.0
+            // WebGL - friendly
+            #pragma target 2.0
+            #pragma prefer_hlslcc gles
             #pragma vertex   vert
             #pragma fragment frag
             #pragma multi_compile_instancing
 
-            // Shadows & pipeline
+            // URP lighting / shadows
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
 
-            // Global toggles from controller
+            // Feature toggles you use
             #pragma multi_compile _ _BEND_USE_GLOBAL
             #pragma multi_compile _ _EDGE_FADE_DITHER _EDGE_FADE_TRANSPARENT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
@@ -48,10 +56,10 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             CBUFFER_START(UnityPerMaterial)
             float4 _BaseColor;
             float4 _BaseMap_ST;
-            float _WB_DisableBend; // allow per - material toggle
+            float _WB_DisableBend;
             CBUFFER_END
 
-            // Globals set by WorldBendGlobalController (or elsewhere)
+            // Globals (set via Shader.SetGlobal *)
             float _WB_Strength_G;
             float _WB_Radius_G;
             float4 _WB_Axis_G; // xyz
@@ -60,7 +68,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             float _WB_MaxYDrop_G;
             float _WB_BendStart_G;
             float _WB_BendEnd_G;
-            float4 _WB_ComponentMask_G; // xyz (0 / 1)
+            float4 _WB_ComponentMask_G; // xyz
 
             struct Attributes
             {
@@ -76,7 +84,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
                 float2 uv : TEXCOORD2;
-                float distAbs : TEXCOORD3; // along - axis abs distance for edge fade
+                float distAbs : TEXCOORD3;
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                 float4 shadowCoord : TEXCOORD4;
                 #endif
@@ -84,21 +92,12 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            // -- -- helpers -- --
+            // no arrays / uints
             float ArcSag(float dist, float radius)
             {
                 float R = max(radius, 1e-3);
                 float d = min(dist, R - 1e-4);
                 return R - sqrt(R * R - d * d);
-            }
-
-            float Bayer4x4(uint2 p)
-            {
-                const float d[16] = {
-                    0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5
-                };
-                uint idx = (p.y & 3) * 4 + (p.x & 3);
-                return (d[idx] + 0.5) / 16.0;
             }
 
             Varyings vert(Attributes IN)
@@ -111,14 +110,15 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float3 posWS = TransformObjectToWorld(IN.positionOS.xyz);
                 float3 nrmWS = TransformObjectToWorldNormal(IN.normalOS);
 
-                // If disabled : skip bending entirely, and neutralize edge - fade distance
+                // Skip bending if disabled
                 if (_WB_DisableBend > 0.5)
                 {
                     OUT.positionWS = posWS;
                     OUT.positionCS = TransformWorldToHClip(posWS);
                     OUT.normalWS = normalize(nrmWS);
-                    OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);
-                    OUT.distAbs = 0;
+                    OUT.uv = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw; // explicit UV transform
+                    OUT.distAbs = 0.0;
+
                     #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                     OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
                     #endif
@@ -135,10 +135,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float bendEnd = _WB_BendEnd_G;
                 float3 compMask = _WB_ComponentMask_G.xyz;
 
-                // masked delta (ignore components by zeroing them)
                 float3 delta = (posWS - originWS) * compMask;
-
-                // distance along axis (+ fade - in near bendStart..bendEnd if set)
                 float d = dot(delta, axisWS);
                 float ad = abs(d);
 
@@ -148,31 +145,28 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                     originFadeT = saturate((ad - bendStart) / max(1e-5, (bendEnd - bendStart)));
                 }
 
-                // bounded arc sag
                 float sag = ArcSag(ad, radius) * strength;
                 sag = min(sag, maxDrop);
                 posWS.y -= sag * originFadeT;
 
-                // write varyings
                 OUT.positionWS = posWS;
                 OUT.positionCS = TransformWorldToHClip(posWS);
                 OUT.normalWS = normalize(nrmWS);
-                OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);
+                OUT.uv = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
                 OUT.distAbs = ad;
 
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                 OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
                 #endif
-
                 return OUT;
             }
 
             half4 frag(Varyings IN) : SV_Target
             {
                 half4 baseTex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);
-                half4 baseCol = baseTex * _BaseColor; // include color.a * texture.a
+                half4 baseCol = baseTex * _BaseColor;
 
-                // lighting
+                // Main light with shadows
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                 Light L = GetMainLight(IN.shadowCoord);
                 #else
@@ -192,13 +186,14 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 fadeAlpha = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
                 #endif
 
-                float finalAlpha = baseCol.a * fadeAlpha;
-                return half4(color, finalAlpha);
+                return half4(color, baseCol.a * fadeAlpha);
             }
             ENDHLSL
         }
 
-        // -- -- -- -- -- -- -- -- -- -- ShadowCaster (bent + faded) -- -- -- -- -- -- -- -- -- --
+        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
+        // ShadowCaster (bent + faded)
+        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
         Pass
         {
             Name "ShadowCaster"
@@ -209,31 +204,28 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             ColorMask 0
 
             HLSLPROGRAM
-            #pragma target 3.0
+            #pragma target 2.0
+            #pragma prefer_hlslcc gles
             #pragma vertex   ShadowPassVertex
             #pragma fragment ShadowPassFragment
             #pragma multi_compile_instancing
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
-
-            // keep edge fade behavior in the shadow map
             #pragma multi_compile _ _BEND_USE_GLOBAL
             #pragma multi_compile _ _EDGE_FADE_DITHER _EDGE_FADE_TRANSPARENT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-            // Globals (same as forward)
             float _WB_Strength_G;
             float _WB_Radius_G;
-            float4 _WB_Axis_G; // xyz
-            float4 _WB_Origin_G; // xyz
+            float4 _WB_Axis_G;
+            float4 _WB_Origin_G;
             float _WB_EdgeFadeStartPct_G;
             float _WB_MaxYDrop_G;
             float _WB_BendStart_G;
             float _WB_BendEnd_G;
-            float4 _WB_ComponentMask_G; // xyz
+            float4 _WB_ComponentMask_G;
 
-            // We read the same per - material value; Unity will also allow a global override.
             float _WB_DisableBend;
 
             struct Attributes
@@ -246,7 +238,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float distAbs : TEXCOORD0; // to clip near edge
+                float distAbs : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -271,11 +263,10 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 if (_WB_DisableBend > 0.5)
                 {
                     OUT.positionCS = TransformWorldToHClip(ApplyShadowBias(posWS, nrmWS, 0));
-                    OUT.distAbs = 0; // no edge fade clip
+                    OUT.distAbs = 0;
                     return OUT;
                 }
 
-                // same bend as forward
                 float strength = _WB_Strength_G;
                 float radius = _WB_Radius_G;
                 float3 axisWS = normalize(_WB_Axis_G.xyz);
@@ -306,18 +297,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
             float4 ShadowPassFragment(Varyings IN) : SV_Target
             {
-                // match edge fade in shadows so shadows fade out at the horizon
                 float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
                 float alpha = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
-
-                #if defined(_EDGE_FADE_TRANSPARENT)
-                // hard clip at near - zero alpha to avoid lingering shadows beyond edge
-                clip(alpha - 0.001);
-                #else
-                // dithered cutout inside shadow map is unnecessary; use hard clip
-                clip(alpha - 0.001);
-                #endif
-
+                clip(alpha - 0.001); // keep hard clip in shadow map
                 return 0;
             }
             ENDHLSL
