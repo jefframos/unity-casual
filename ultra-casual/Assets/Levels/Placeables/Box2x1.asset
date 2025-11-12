@@ -15,5 +15,5 @@ MonoBehaviour:
   objectId: Box2x1
   prefab: {fileID: 100000, guid: 0864f326178079844a14f45518f07325, type: 3}
   size: {x: 2, y: 1}
-  prefabOffset: {x: 0, y: 0.5, z: 0}
+  prefabOffset: {x: 0, y: 0, z: 0}
   editorColor: {r: 0.2, g: 0.30502844, b: 0.8, a: 0.35}

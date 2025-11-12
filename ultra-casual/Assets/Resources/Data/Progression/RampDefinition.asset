@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c72dd7409e82b14992472fd1474e38e, type: 3}
+  m_Name: RampDefinition
+  m_EditorClassIdentifier: 
+  type: 0
+  upgradeId: 
+  icon: {fileID: 0}
+  color: {r: 0.55962604, g: 0.3254717, b: 1, a: 1}
+  worldPrefab: {fileID: 0}
+  baseCost: 100
+  costMultiplier: 1.3
+  baseValue: -20
+  steps:
+  - name: 
+    icon: {fileID: 21300000, guid: 74271cf1f44f10941b18e9358521f8e9, type: 3}
+    worldPrefab: {fileID: 3861126983884939448, guid: c6f2ea0c1b27c2d4b9f68e4053308bbf, type: 3}
+    addedCost: 0
+    extraValue: 0
+    globalAddPerIndex: -0.2
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -0.2
+      multiplyValue: 1
+    - addValue: -0.4
+      multiplyValue: 1
+    - addValue: -0.6
+      multiplyValue: 1
+    - addValue: -0.8
+      multiplyValue: 1
+    - addValue: -1
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 21300000, guid: 3e6097782b31bf846a57678b271c95fe, type: 3}
+    worldPrefab: {fileID: 2356232428310043528, guid: 0ed36a228c3790340ab31f9f7e549d92, type: 3}
+    addedCost: 0
+    extraValue: 3
+    globalAddPerIndex: -0.4
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -1.4
+      multiplyValue: 1
+    - addValue: -1.8
+      multiplyValue: 1
+    - addValue: -2.2
+      multiplyValue: 1
+    - addValue: -2.6
+      multiplyValue: 1
+    - addValue: -3
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 21300000, guid: 79b7d37fde696064694d11bb69bc0ed3, type: 3}
+    worldPrefab: {fileID: 2976809907342854954, guid: 96a26f2adc2499c468fde6b0ebfc0288, type: 3}
+    addedCost: 0
+    extraValue: 6
+    globalAddPerIndex: -0.6
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -3.6
+      multiplyValue: 1
+    - addValue: -4.2
+      multiplyValue: 1
+    - addValue: -4.8
+      multiplyValue: 1
+    - addValue: -5.4
+      multiplyValue: 1
+    - addValue: -6
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 21300000, guid: 84bc8c2dd632eed45a926d0b44d300e5, type: 3}
+    worldPrefab: {fileID: 1636676569000035558, guid: 338f1ef98cea46f4a89db1846bb87a66, type: 3}
+    addedCost: 0
+    extraValue: 9
+    globalAddPerIndex: -0.8
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -6.8
+      multiplyValue: 1
+    - addValue: -7.6
+      multiplyValue: 1
+    - addValue: -8.4
+      multiplyValue: 1
+    - addValue: -9.2
+      multiplyValue: 1
+    - addValue: -10
+      multiplyValue: 1
+  - name: 
+    icon: {fileID: 21300000, guid: 1f621965a8c597a4a94ff1641241296d, type: 3}
+    worldPrefab: {fileID: 2739472166706228045, guid: 69b4532d9c0a7ef48bc5a8cf3bc5d13b, type: 3}
+    addedCost: 0
+    extraValue: 12
+    globalAddPerIndex: -1
+    useLastValueAsFirst: 1
+    levels:
+    - addValue: -11
+      multiplyValue: 1
+    - addValue: -12
+      multiplyValue: 1
+    - addValue: -13
+      multiplyValue: 1
+    - addValue: -14
+      multiplyValue: 1
+    - addValue: -15
+      multiplyValue: 1

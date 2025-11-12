@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelName: Shape1
   gridSize: {x: 8, y: 8}
-  cellSize: 1
+  cellSize: 5
   depth: 1
   placed:
   - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}

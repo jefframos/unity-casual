@@ -104,13 +104,32 @@ MonoBehaviour:
     maxPlacementTries: 6
     lateralJitter: 0.5
     jitterFloatY: 1
-  - prefab: {fileID: 7589848554180403644, guid: 9bc42d00b05854b4cada571f6da9690b, type: 3}
+  - prefab: {fileID: 5416365596141464704, guid: 35e4b38e73601034b90b74177f4c3610, type: 3}
     addPlayerYOffset: 0
     everyMeters: 10
     spawnAheadMin: 150
     spawnAheadMax: 200
-    initialOffsetMeters: 100
-    lateralRange: {x: -50, y: 50}
+    initialOffsetMeters: 20
+    lateralRange: {x: 50, y: 30}
+    placeOnGround: 1
+    groundYOffset: 0
+    floatYRange: {x: 0, y: 0}
+    alignToTrack: 0
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    worldEuler: {x: 0, y: 0, z: 0}
+    prewarmCount: 5
+    collisionRadius: 3
+    useHorizontalDistance: 1
+    maxPlacementTries: 6
+    lateralJitter: 0.5
+    jitterFloatY: 1
+  - prefab: {fileID: 5416365596141464704, guid: 35e4b38e73601034b90b74177f4c3610, type: 3}
+    addPlayerYOffset: 0
+    everyMeters: 10
+    spawnAheadMin: 150
+    spawnAheadMax: 200
+    initialOffsetMeters: 20
+    lateralRange: {x: -50, y: -30}
     placeOnGround: 1
     groundYOffset: 0
     floatYRange: {x: 0, y: 0}

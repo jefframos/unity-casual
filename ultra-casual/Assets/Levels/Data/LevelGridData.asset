@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelName: Level1
   gridSize: {x: 6, y: 6}
-  cellSize: 1
+  cellSize: 5
   depth: 2
   placed:
   - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
@@ -54,12 +54,6 @@ MonoBehaviour:
     origin: {x: 4, y: 2}
     layerZ: 0
   - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
-    origin: {x: 0, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
-    origin: {x: 0, y: 1}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
     origin: {x: 0, y: 2}
     layerZ: 0
   - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
@@ -92,3 +86,18 @@ MonoBehaviour:
   - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
     origin: {x: 4, y: 0}
     layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 0, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 1, y: 1}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 4, y: 2}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: bd1f3d12e1271994692b9af7eec80c67, type: 2}
+    origin: {x: 5, y: 2}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: bd1f3d12e1271994692b9af7eec80c67, type: 2}
+    origin: {x: 1, y: 3}
+    layerZ: 0

@@ -15,5 +15,5 @@ MonoBehaviour:
   objectId: TNT
   prefab: {fileID: 5543203482489310533, guid: 875ba6932db02764db12c3f6285d9cf8, type: 3}
   size: {x: 1, y: 1}
-  prefabOffset: {x: 0, y: 0.5, z: 0}
+  prefabOffset: {x: 0, y: 0, z: 0}
   editorColor: {r: 1, g: 0, b: 0.009994984, a: 0.6666667}
