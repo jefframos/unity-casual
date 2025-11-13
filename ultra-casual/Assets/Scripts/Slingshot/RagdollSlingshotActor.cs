@@ -23,21 +23,37 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
     [Tooltip("Angular damping while flying after switch. <0 to leave default.")]
     public float ragdollAngularDamping = 0.5f;
 
-    [Tooltip("Copy the launcher's world velocity/angVel to all ragdoll bodies.")]
+    [Tooltip("Copy the launcher's world velocity/angVel to all ragdoll bodies (when not using deterministic ramp).")]
     public bool inheritLauncherVelocity = true;
 
     [Tooltip("Recompute mass props on switch.")]
     public bool resetMassPropsOnSwitch = true;
 
+    [Header("Deterministic Ramp Flight")]
+    [Tooltip("Enable deterministic kinematic motion along a ramp when BeginDeterministicFlight is used.")]
+    public bool useDeterministicRamp = true;
+
+    [Tooltip("BoxCollider that represents the ramp volume.")]
+    public BoxCollider rampCollider;
+
+    [Tooltip("Where along the ramp the deterministic motion should start.")]
+    public Transform rampStartTransform;
+
+    [Tooltip("Extra distance past the ramp end before switching to ragdoll (in local Z of the ramp).")]
+    public float rampExtraDistance = 0.1f;
+
+    [Tooltip("Multiplier for how fast we move along the ramp. 0.1 = 10% of the launch speed.")]
+    [Range(0.01f, 1f)]
+    public float rampSpeedMultiplier = 1f;
+
+    [Tooltip("Optional visual rotation for the launcher after switch.")]
+    public float launchAngleOffset = 0f;
+
     // reset snapshot for the whole actor
     private Vector3 _startPos;
     private Vector3 _launcherBodyStartLocalPos;
     private Quaternion _startRot;
-    private bool _followLauncher;
     private bool _hasSwitched;
-
-
-    public float launchAngleOffset = 0f;
 
     public Transform Parent => parent;
     public Transform LeftAnchor => leftAnchor;
@@ -45,11 +61,20 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
     public Transform FollowTarget => followTarget != null ? followTarget : parent;
 
     public bool IsLaunching => _isLaunching;
-
-    private bool _isLaunching = false;
+    private bool _isLaunching;
 
     public event Action OnReleaseStart;
     public event Action OnLaunchStart;
+
+    // -------- deterministic state using ramp collider --------
+    private bool _inDeterministicFlight;
+    private Vector3 _deterministicVelocity;   // scaled velocity used for ramp travel
+    private float _localZ;                    // position along ramp Z (local space)
+    private float _localX;                    // lateral offset along ramp X (local space)
+    private float _forwardSpeed;              // component of launch velocity along ramp forward
+    private float _sideSpeed;                 // component along ramp right
+    private float _upSpeed;                   // component along ramp up
+    private Vector3 _rampHalfExtents;         // half size of rampCollider
 
     private void Reset()
     {
@@ -81,6 +106,11 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
             _launcherBodyStartLocalPos = launcherBody.transform.localPosition;
         }
 
+        if (rampCollider != null)
+        {
+            _rampHalfExtents = 0.5f * rampCollider.size;
+        }
+
         // Hook relay on the launcher collider so we can hear Starter triggers
         AttachOrConfigureRelay();
 
@@ -88,18 +118,20 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         EnterAimingPose();
         EnableLauncher(false);
 
-        animator.SetTrigger("reset");
-
-    }
-
-    private void LateUpdate()
-    {
-        // While we haven't switched, keep the character glued to the launcher
-        if (_followLauncher && !_hasSwitched && launcherBody != null)
+        if (animator != null)
         {
-            //rig.transform.localPosition = Vector3.Lerp(rig.transform.localPosition, launcherBody.transform.localPosition, 0.15f);//(launcherBody.position, Quaternion.identity);
+            animator.SetTrigger("reset");
         }
     }
+
+    private void FixedUpdate()
+    {
+        if (_inDeterministicFlight)
+        {
+            UpdateDeterministicRampMotion();
+        }
+    }
+
     private void AttachOrConfigureRelay()
     {
         if (launcherCollider == null) return;
@@ -121,9 +153,13 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         {
             EnterAimingPose();
         }
-        // Non-kinematic is controlled by Launch + switch
+        // Non-kinematic is controlled by Launch + switch or deterministic flight
     }
 
+    /// <summary>
+    /// LEGACY physics-based launch: uses the launcherBody rigidbody and AddForce.
+    /// Still available if you want full-physics randomness or as fallback.
+    /// </summary>
     public void Launch(Vector3 direction, float impulse)
     {
         if (rig == null || launcherBody == null || launcherCollider == null)
@@ -133,7 +169,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         }
 
         _hasSwitched = false;
-        _followLauncher = true;
+        _inDeterministicFlight = false;
+        _deterministicVelocity = Vector3.zero;
+
         // 1) Prepare: animator OFF, ragdoll frozen (kinematic), launcher ON
         if (animator != null) animator.enabled = false;
 
@@ -158,6 +196,107 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         launcherBody.useGravity = true;
         launcherBody.AddForce(dir * impulse, ForceMode.VelocityChange);
 
+        _isLaunching = true;
+
+        OnReleaseStart?.Invoke();
+    }
+
+    /// <summary>
+    /// NEW deterministic launch: no physics during ramp, pure kinematic movement.
+    /// Called by the SlingshotController with a velocity vector.
+    /// </summary>
+    public void BeginDeterministicFlight(Vector3 launchVelocity)
+    {
+        if (!useDeterministicRamp || rampCollider == null)
+        {
+            // Fallback: interpret magnitude as impulse in old Launch
+            Launch(launchVelocity.normalized, launchVelocity.magnitude);
+            return;
+        }
+
+        if (rig == null)
+        {
+            Debug.LogWarning("[DelayedRagdollSwitcher] Rig is missing; cannot do deterministic flight.");
+            return;
+        }
+
+        if (launchVelocity.sqrMagnitude < 0.0001f)
+        {
+            Debug.LogWarning("[DelayedRagdollSwitcher] Launch velocity is too small.");
+            return;
+        }
+
+        _hasSwitched = false;
+        _inDeterministicFlight = true;
+        _isLaunching = true;
+
+        // Slower velocity only for sliding along ramp
+        Vector3 scaledVel = launchVelocity * rampSpeedMultiplier;
+        _deterministicVelocity = scaledVel;
+
+        var rampTr = rampCollider.transform;
+        Vector3 fwd = rampTr.forward.normalized;
+        Vector3 right = rampTr.right.normalized;
+        Vector3 up = rampTr.up.normalized;
+
+        _forwardSpeed = Vector3.Dot(scaledVel, fwd);
+        _sideSpeed = Vector3.Dot(scaledVel, right);
+        _upSpeed = Vector3.Dot(scaledVel, up);
+
+        // Ensure we move forward along the ramp; if backwards, flip
+        if (_forwardSpeed <= 0f)
+        {
+            _forwardSpeed = Mathf.Abs(_forwardSpeed);
+            _sideSpeed = -_sideSpeed;
+            _upSpeed = -_upSpeed;
+        }
+
+        // Turn off animator, keep ragdoll bodies frozen
+        if (animator != null)
+        {
+            animator.enabled = false;
+        }
+
+        rig.SetKinematic(true);
+        rig.ZeroVelocities();
+
+        // Disable launcher during deterministic phase
+        EnableLauncher(false);
+        if (launcherBody != null)
+        {
+            launcherBody.useGravity = false;
+            launcherBody.isKinematic = true;
+            launcherBody.linearVelocity = Vector3.zero;
+            launcherBody.angularVelocity = Vector3.zero;
+        }
+
+        // Compute starting local X/Z from rampStartTransform (or fallback)
+        float margin = 0.05f;
+        if (rampStartTransform != null)
+        {
+            // Get local position of the start transform inside the ramp collider space
+            Vector3 local = rampTr.InverseTransformPoint(rampStartTransform.position) - rampCollider.center;
+
+            _localX = Mathf.Clamp(local.x, -_rampHalfExtents.x + margin, _rampHalfExtents.x - margin);
+            _localZ = Mathf.Clamp(local.z, -_rampHalfExtents.z, _rampHalfExtents.z);
+        }
+        else
+        {
+            // Fallback: start at back center if no transform assigned
+            _localZ = -_rampHalfExtents.z;
+            _localX = 0f;
+        }
+
+        // Place character at that point on the ramp surface (Y=0 in ramp local)
+        Vector3 localStart = new Vector3(_localX, 0f, _localZ);
+        Vector3 worldStart = rampTr.TransformPoint(localStart + rampCollider.center);
+        parent.position = worldStart;
+
+        // Orientation based on launch direction projected on ramp plane
+        Vector3 planarVel = fwd * _forwardSpeed + right * _sideSpeed;
+        Vector3 dir = planarVel.sqrMagnitude > 0.0001f ? planarVel.normalized : fwd;
+        parent.rotation = Quaternion.LookRotation(dir, up);
+
         OnReleaseStart?.Invoke();
     }
 
@@ -170,7 +309,13 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         bool toLauncher = false
     )
     {
-        if (toLauncher && launcherBody != null)
+        // If deterministic ramp is active and we want to force switch, do it first
+        if (forceSwitchToRagdoll && !_hasSwitched)
+        {
+            ForceSwitchToRagdoll();
+        }
+
+        if (toLauncher && launcherBody != null && !_hasSwitched)
         {
             if (applicationPoint.HasValue)
             {
@@ -183,13 +328,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
             return;
         }
 
-        // If requested, switch before applying to ragdoll
-        if (forceSwitchToRagdoll && !_hasSwitched)
-        {
-            ForceSwitchToRagdoll();
-        }
-
-        // If we still haven't switched and not targeting launcher, default to launcher
+        // If we still haven't switched and not targeting launcher, default to launcher (legacy flow)
         if (!_hasSwitched)
         {
             if (launcherBody != null)
@@ -252,6 +391,47 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
             }
         }
     }
+
+    private void UpdateDeterministicRampMotion()
+    {
+        if (rampCollider == null)
+        {
+            _inDeterministicFlight = false;
+            ForceSwitchToRagdoll();
+            return;
+        }
+
+        var rampTr = rampCollider.transform;
+        Vector3 fwd = rampTr.forward.normalized;
+        Vector3 right = rampTr.right.normalized;
+        Vector3 up = rampTr.up.normalized;
+
+        float dt = Time.fixedDeltaTime;
+
+        // Move along ramp Z and sideways X using the (scaled) speeds
+        _localZ += _forwardSpeed * dt;
+        _localX += _sideSpeed * dt;
+
+        float margin = 0.05f;
+        float maxX = _rampHalfExtents.x - margin;
+        _localX = Mathf.Clamp(_localX, -maxX, maxX);
+
+        Vector3 localPos = new Vector3(_localX, 0f, _localZ);
+        Vector3 worldPos = rampTr.TransformPoint(localPos + rampCollider.center);
+        parent.position = worldPos;
+
+        Vector3 planarVel = fwd * _forwardSpeed + right * _sideSpeed;
+        Vector3 dir = planarVel.sqrMagnitude > 0.0001f ? planarVel.normalized : fwd;
+        parent.rotation = Quaternion.LookRotation(dir, up);
+
+        // When we pass front of ramp + extra, switch to ragdoll
+        if (_localZ >= _rampHalfExtents.z + rampExtraDistance)
+        {
+            _inDeterministicFlight = false;
+            ForceSwitchToRagdoll();
+        }
+    }
+
     // ---------------- External switch trigger ----------------
 
     /// <summary>
@@ -263,30 +443,53 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
     }
 
     /// <summary>
-    /// Public API to switch immediately from launcher to ragdoll.
+    /// Public API to switch immediately from launcher/deterministic to ragdoll.
     /// Safe to call once; no-ops if already switched or if references are missing.
     /// </summary>
     public void ForceSwitchToRagdoll()
     {
-        if (_hasSwitched) return;
-        if (rig == null || launcherBody == null) return;
+        if (_hasSwitched || rig == null) return;
 
-        animator.SetTrigger("jump");
+        if (animator != null)
+        {
+            animator.SetTrigger("jump");
+        }
 
         _hasSwitched = true;
-        _followLauncher = false;
-        // Snap root to launcher pose
+        _inDeterministicFlight = false;
+
+        // Snap root to current pose
         rig.transform.localPosition = Vector3.zero;
-        //transform.SetPositionAndRotation(launcherBody.position, Quaternion.identity);
 
         // Enable physics on ragdoll
         rig.SetKinematic(false);
 
+        Vector3 lin = Vector3.zero;
+        Vector3 ang = Vector3.zero;
+
+        // If we came from deterministic ramp, reconstruct velocity from components
+        if (_deterministicVelocity != Vector3.zero && useDeterministicRamp && rampCollider != null)
+        {
+            var rampTr = rampCollider.transform;
+            Vector3 fwd = rampTr.forward.normalized;
+            Vector3 right = rampTr.right.normalized;
+            Vector3 up = rampTr.up.normalized;
+
+            Vector3 planar = fwd * _forwardSpeed + right * _sideSpeed;
+            Vector3 vertical = up * _upSpeed;
+
+            lin = planar + vertical;
+            ang = Vector3.zero; // you can add some spin if you want
+        }
+        // Otherwise fall back to launcher-based velocity inheritance
+        else if (inheritLauncherVelocity && launcherBody != null)
+        {
+            lin = launcherBody.linearVelocity;
+            ang = launcherBody.angularVelocity;
+        }
+
         if (inheritLauncherVelocity)
         {
-            var lin = launcherBody.linearVelocity;
-            var ang = launcherBody.angularVelocity;
-
             foreach (var b in rig.Bodies)
             {
                 b.linearVelocity = lin;
@@ -304,15 +507,18 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         }
 
         // Disable launcher so only the ragdoll collides
-        launcherBody.isKinematic = false;
-        launcherBody.useGravity = false;
-        launcherBody.linearVelocity = Vector3.zero;
-        launcherBody.angularVelocity = Vector3.zero;
-        launcherBody.isKinematic = true;
-        EnableLauncher(false);
+        if (launcherBody != null)
+        {
+            launcherBody.useGravity = false;
+            launcherBody.linearVelocity = Vector3.zero;
+            launcherBody.angularVelocity = Vector3.zero;
+            launcherBody.isKinematic = true;
 
-        //launcherBody.MoveRotation(Quaternion.Euler(launchAngleOffset, 0, 0));
-        launcherBody.transform.rotation = (Quaternion.Euler(launchAngleOffset, 0, 0));
+            // Optional: rotate launcher visual if you still want it
+            launcherBody.transform.rotation = Quaternion.Euler(launchAngleOffset, 0, 0);
+        }
+
+        EnableLauncher(false);
 
         OnLaunchStart?.Invoke();
     }
@@ -323,6 +529,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
     {
         _hasSwitched = false;
         _isLaunching = false;
+        _inDeterministicFlight = false;
+        _deterministicVelocity = Vector3.zero;
+
         // Freeze everything
         if (rig != null)
         {
@@ -333,13 +542,15 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         }
 
         // Reset transform
-        rig.transform.localPosition = Vector3.zero;
+        if (rig != null)
+            rig.transform.localPosition = Vector3.zero;
+
         transform.SetPositionAndRotation(_startPos, _startRot);
+
         // Reset launcher
         if (launcherBody != null)
         {
             launcherBody.useGravity = false;
-            launcherBody.isKinematic = false;
             launcherBody.linearVelocity = Vector3.zero;
             launcherBody.angularVelocity = Vector3.zero;
             launcherBody.isKinematic = true;
@@ -386,15 +597,12 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
             {
                 _isLaunching = true;
             }
-            // Make sure the collider is set as a *non-trigger* for flight if you expect physics collisions,
-            // but it still receives OnTriggerEnter when overlapping trigger volumes.
-            // (i.e., launcherCollider.isTrigger = false;)
         }
 
         if (launcherBody != null)
         {
-            launcherBody.collisionDetectionMode = on ? launcherCollisionMode : CollisionDetectionMode.Discrete;
+            launcherBody.collisionDetectionMode =
+                on ? launcherCollisionMode : CollisionDetectionMode.Discrete;
         }
     }
 }
-

@@ -198,4 +198,9 @@ public class SlingshotCar : MonoBehaviour, ISlingshotable, IResettable
     {
         return rb.linearVelocity;
     }
+
+    public void BeginDeterministicFlight(Vector3 launchVelocity)
+    {
+        throw new NotImplementedException();
+    }
 }

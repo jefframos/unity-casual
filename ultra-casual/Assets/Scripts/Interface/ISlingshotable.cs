@@ -16,7 +16,7 @@ public interface ISlingshotable
 
     // Toggle physics kinematic mode while aiming.
     void SetKinematic(bool isKinematic);
-
+    void BeginDeterministicFlight(Vector3 launchVelocity);
     // Controller computes direction & impulse; object applies the force however it wants.
     void Launch(Vector3 direction, float impulse);
 

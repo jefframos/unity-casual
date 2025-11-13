@@ -19,7 +19,7 @@ MonoBehaviour:
   requireMovementImpact: 1
   useAddExplosionForce: 1
   explosionUpwardsModifier: 0
-  baseForce: 150
+  baseForce: 80
   forceMode: 1
   scaleByMass: 1
   randomAngleJitterDeg: 0

@@ -333,8 +333,64 @@ public class SlingshotController : MonoBehaviour, IGameController
         var t = _target.FollowTarget ? _target.FollowTarget : _target.Parent;
         OnEnterGameMode?.Invoke(t);
     }
-
     private void ExitAimingAndLaunch()
+    {
+        _isAiming = false;
+        if (_target == null) return;
+
+        // 1. Direction from pull
+        Vector3 center = GetStartCenterOnPlane();
+        Vector3 rawDir = Vector3.ProjectOnPlane(center - _pullPoint, view.upAxis);
+        if (rawDir.sqrMagnitude < 0.0001f) return;
+        rawDir.Normalize();
+
+        // 2. Baseline forward to clamp yaw
+        Vector3 baselineFwd = Vector3.ProjectOnPlane(view.GetPreferredForward(), view.upAxis).normalized;
+        if (baselineFwd.sqrMagnitude < 0.0001f)
+            baselineFwd = rawDir;
+
+        // 3. Clamp yaw
+        Vector3 clampedDir = ClampYawAroundUp(baselineFwd, rawDir, maxYawDegrees, view.upAxis);
+
+        // 4. Optional bias toward ramp forward
+        if (rampForwardRef != null)
+        {
+            Vector3 rampFwd = Vector3.ProjectOnPlane(rampForwardRef.forward, view.upAxis).normalized;
+            clampedDir = Vector3.Slerp(clampedDir, rampFwd, 0.25f).normalized;
+        }
+
+        // 5. Compute pull distance along the back axis (like you already do)
+        float backAxis = Mathf.Max(0f, Vector3.Dot(center - _pullPoint, baselineFwd));
+        float pullDistance = Mathf.Clamp(
+            backAxis,
+            Mathf.Clamp(minPullDistance, 0f, maxPullVirtualDistance),
+            maxPullVirtualDistance
+        );
+
+        // 6. Convert pull distance into a speed (deterministic scalar)
+        float impulseValue = impulsePerMeter;
+        if (useUpgradeData)
+        {
+            var extra = UpgradeSystem.Instance.GetCurrentStepData(UpgradeType.RAMP).extraValue;
+            impulseValue = UpgradeSystem.Instance.GetValue(upgradeType) + extra;
+        }
+
+        float speed = pullDistance / maxPullVirtualDistance *
+                      Mathf.Max(minImpulse, impulseValue * impulsePerMeterScale);
+
+        // 7. Our deterministic launch velocity
+        Vector3 launchVelocity = clampedDir * speed;
+
+        // 8. Tell the target to start deterministic ramp flight instead of applying physics impulse
+        _target.BeginDeterministicFlight(launchVelocity);
+
+        view.PlaySnapFrom(_pullPoint);
+
+        var followT = _target.FollowTarget ? _target.FollowTarget : _target.Parent;
+        OnShotStarted?.Invoke(followT);
+    }
+
+    private void ExitAimingAndLaunch2()
     {
         _isAiming = false;
         if (_target == null) return;
