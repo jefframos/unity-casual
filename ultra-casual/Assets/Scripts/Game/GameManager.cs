@@ -183,7 +183,6 @@ public class GameManager : MonoBehaviour
                 .FirstOrDefault();
 
 
-
             if (endGameOrchestrator != null)
             {
                 await endGameOrchestrator.OrchestrateEnd(runScoreDelta: 10, startScoreValue: final, nextIsHighscore);

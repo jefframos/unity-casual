@@ -75,6 +75,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
     private float _sideSpeed;                 // component along ramp right
     private float _upSpeed;                   // component along ramp up
     private Vector3 _rampHalfExtents;         // half size of rampCollider
+    public DirectionView directionView;         // half size of rampCollider
 
     private void Reset()
     {
@@ -86,6 +87,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         if (rig == null) rig = GetComponentInChildren<RagdollRig>(true);
         if (animator == null) animator = GetComponentInChildren<Animator>(true);
         if (parent == null) parent = transform;
+
+        if (directionView == null)
+            directionView = GetComponentInChildren<DirectionView>(true);
 
         _startPos = transform.position;
         _startRot = transform.rotation;
@@ -190,6 +194,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
 
         EnableLauncher(true);
 
+        if (directionView != null)
+            directionView.Hide();
+
         // 2) Fire the launcher
         var dir = direction.sqrMagnitude > 0f ? direction.normalized : transform.forward;
         launcherBody.isKinematic = false;
@@ -259,6 +266,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
 
         rig.SetKinematic(true);
         rig.ZeroVelocities();
+
+        if (directionView != null)
+            directionView.Hide();
 
         // Disable launcher during deterministic phase
         EnableLauncher(false);
@@ -391,7 +401,17 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
             }
         }
     }
+    public void UpdateAimDirection(Vector3 worldDirection, float pullForce)
+    {
+        if (directionView == null)
+            return;
 
+        // Only show while we're not in flight / ragdolled
+        if (!_hasSwitched && !_inDeterministicFlight)
+        {
+            directionView.SetDirection(worldDirection, pullForce);
+        }
+    }
     private void UpdateDeterministicRampMotion()
     {
         if (rampCollider == null)
@@ -559,6 +579,9 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
 
             EnableLauncher(false);
         }
+
+        if (directionView != null)
+            directionView.Hide();
 
         // Re-arm relay (in case object was disabled or swapped)
         AttachOrConfigureRelay();

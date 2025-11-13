@@ -82,9 +82,9 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     private Vector3 _startPos;
     private Quaternion _startRot;
 
-    private const float WEAK_KILL_IMPULSE = 5.0f;
-    private const float STANDARD_KILL_IMPULSE = 7.5f;
-    private const float HEAVY_KILL_IMPULSE = 14.0f;
+    private const float WEAK_KILL_IMPULSE = 50f;
+    private const float STANDARD_KILL_IMPULSE = 75f;
+    private const float HEAVY_KILL_IMPULSE = 120f;
 
     void Reset()
     {

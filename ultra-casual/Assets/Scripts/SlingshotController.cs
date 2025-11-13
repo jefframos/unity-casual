@@ -236,9 +236,13 @@ public class SlingshotController : MonoBehaviour, IGameController
             _target.Parent.position = Vector3.Lerp(_target.Parent.position, _target.Parent.position + delta, lerpSpeed);
         }
 
+        // <<< ADD THIS HERE >>>
+        float pullForce = clampedBack / maxPullDistance;
+        _target?.UpdateAimDirection(_lastClampedDir, pullForce);
+
         // Orient with yaw clamp
         _lastClampedDir = AlignToLaunchDirection(center, _pullPoint, baselineFwd);
-        _lastClampedDir = AlignToLaunchDirection(center, _pullPoint, baselineFwd);
+
 
         // Draw bands
         view.DrawBands(_target);

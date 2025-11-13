@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectId: Box3x1
   prefab: {fileID: 100000, guid: 42e3c49f639df5840bfabe0ca54e64cd, type: 3}
-  size: {x: 6, y: 2}
+  size: {x: 4, y: 4}
   prefabOffset: {x: 0, y: 0, z: 0}
   editorColor: {r: 0.8, g: 0.2, b: 0.79752123, a: 0.35}

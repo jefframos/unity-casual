@@ -166,4 +166,14 @@ public class PlayerSlingshotable : MonoBehaviour, ISlingshotable
         // Interpret impulse as speed and reuse deterministic flow
         BeginDeterministicFlight(dir.normalized * impulseAsSpeed);
     }
+
+    public void UpdateAimDirection(Vector3 worldDirection)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void UpdateAimDirection(Vector3 worldDirection, float pullForce)
+    {
+        throw new System.NotImplementedException();
+    }
 }

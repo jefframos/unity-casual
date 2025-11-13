@@ -203,4 +203,14 @@ public class SlingshotCar : MonoBehaviour, ISlingshotable, IResettable
     {
         throw new NotImplementedException();
     }
+
+    public void UpdateAimDirection(Vector3 worldDirection)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void UpdateAimDirection(Vector3 worldDirection, float pullForce)
+    {
+        throw new NotImplementedException();
+    }
 }

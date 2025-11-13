@@ -7,11 +7,11 @@ public class GridLevelEditorWindow : EditorWindow
 {
     private const float LEFT_PANE_WIDTH = 280f;
     private const float GRID_MARGIN = 80f;
-    private float CELL_DRAW_SIZE = 24f;
+    private float CELL_DRAW_SIZE = 32f;
     private const float LAYER_GAP = 24f;          // pixels between layers in side-by-side mode
-    private bool _showAllLayersSideBySide = false;
-    private float _baseScale = 1.0f;
-    private float _baseDepthScale = 1.0f;
+    private bool _showAllLayersSideBySide = true;
+    private float _baseScale = 2.0f;
+    private float _baseDepthScale = 2.0f;
 
     private LevelEditorSettings _settings;
     private LevelGridData _level;
@@ -26,6 +26,9 @@ public class GridLevelEditorWindow : EditorWindow
     // Occupancy map: (x,y,z) -> item
     private readonly Dictionary<Vector3Int, LevelGridData.PlacedItem> _cellToItem =
         new Dictionary<Vector3Int, LevelGridData.PlacedItem>();
+
+    // UI state
+    private bool _showSettingsFoldout = true;
 
     [MenuItem("Tools/Grid Level Editor")]
     public static void Open()
@@ -51,6 +54,7 @@ public class GridLevelEditorWindow : EditorWindow
     }
 
     // ---------- Settings ----------
+
     private void LoadOrCreateSettings()
     {
         if (_settings != null) return;
@@ -96,13 +100,27 @@ public class GridLevelEditorWindow : EditorWindow
     }
 
     // ---------- Left Pane ----------
+
     private void DrawLeftPane()
     {
         using (new EditorGUILayout.VerticalScope(GUILayout.Width(LEFT_PANE_WIDTH)))
         {
             EditorGUILayout.Space(6);
 
-            _settings = (LevelEditorSettings)EditorGUILayout.ObjectField("Settings", _settings, typeof(LevelEditorSettings), false);
+            // Settings asset reference
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Editor Settings", EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+            }
+
+            _settings = (LevelEditorSettings)EditorGUILayout.ObjectField(
+                GUIContent.none,
+                _settings,
+                typeof(LevelEditorSettings),
+                false
+            );
+
             if (_settings == null)
             {
                 if (GUILayout.Button("Create Editor Settings"))
@@ -112,26 +130,57 @@ public class GridLevelEditorWindow : EditorWindow
                 return;
             }
 
-            EditorGUILayout.Space(6);
-            EditorGUILayout.LabelField("Paths", EditorStyles.boldLabel);
-            EditorGUI.BeginChangeCheck();
-            _settings.levelsFolder = EditorGUILayout.TextField("Levels Folder", _settings.levelsFolder);
-            _settings.prefabsFolder = EditorGUILayout.TextField("Prefabs Folder", _settings.prefabsFolder);
-            if (EditorGUI.EndChangeCheck())
+            EditorGUILayout.Space(4);
+
+            // Collapsible "Settings" foldout
+            _showSettingsFoldout = EditorGUILayout.Foldout(
+                _showSettingsFoldout,
+                "Editor & Level Settings",
+                true
+            );
+
+            if (_showSettingsFoldout)
             {
-                EditorUtility.SetDirty(_settings);
+                EditorGUI.indentLevel++;
+                DrawSettingsContent();
+                EditorGUI.indentLevel--;
+                EditorGUILayout.Space(4);
             }
 
             EditorGUILayout.Space(6);
-            EditorGUILayout.LabelField("Level Asset", EditorStyles.boldLabel);
-            _level = (LevelGridData)EditorGUILayout.ObjectField("Active Level", _level, typeof(LevelGridData), false);
 
-            using (new EditorGUILayout.HorizontalScope())
+            DrawPalette();
+        }
+    }
+
+    private void DrawSettingsContent()
+    {
+        // Paths
+        EditorGUILayout.LabelField("Paths", EditorStyles.boldLabel);
+        EditorGUI.BeginChangeCheck();
+        _settings.levelsFolder =
+            EditorGUILayout.TextField("Levels Folder", _settings.levelsFolder);
+        _settings.prefabsFolder =
+            EditorGUILayout.TextField("Prefabs Folder", _settings.prefabsFolder);
+        if (EditorGUI.EndChangeCheck())
+        {
+            EditorUtility.SetDirty(_settings);
+        }
+
+        EditorGUILayout.Space(4);
+
+        // Level creation / save
+        EditorGUILayout.LabelField("Level Assets", EditorStyles.boldLabel);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("New Level"))
             {
-                if (GUILayout.Button("New Level"))
-                {
-                    CreateNewLevelAsset();
-                }
+                CreateNewLevelAsset();
+            }
+
+            using (new EditorGUI.DisabledScope(_level == null))
+            {
                 if (GUILayout.Button("Save Level"))
                 {
                     if (_level != null)
@@ -141,123 +190,218 @@ public class GridLevelEditorWindow : EditorWindow
                     }
                 }
             }
+        }
 
-            EditorGUILayout.Space(8);
-            if (_level != null)
+        if (_level != null)
+        {
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("Active Level Settings", EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+
+            _level.levelName = EditorGUILayout.TextField("Level Name", _level.levelName);
+            _level.cellSize = EditorGUILayout.FloatField(
+                "Cell Size",
+                Mathf.Max(0.0001f, _level.cellSize)
+            );
+            _level.gridSize = EditorGUILayout.Vector2IntField(
+                "Grid Size",
+                new Vector2Int(
+                    Mathf.Max(1, _level.gridSize.x),
+                    Mathf.Max(1, _level.gridSize.y)
+                )
+            );
+
+            // Depth controls
+            int newDepth = Mathf.Max(
+                1,
+                EditorGUILayout.IntField(
+                    "Depth (Z layers)",
+                    Mathf.Max(1, _level.depth)
+                )
+            );
+            if (newDepth != _level.depth)
             {
-                EditorGUILayout.LabelField("Level Settings", EditorStyles.boldLabel);
-
-                EditorGUI.BeginChangeCheck();
-                _level.levelName = EditorGUILayout.TextField("Level Name", _level.levelName);
-                _level.cellSize = EditorGUILayout.FloatField("Cell Size", Mathf.Max(0.0001f, _level.cellSize));
-                _level.gridSize = EditorGUILayout.Vector2IntField("Grid Size",
-                    new Vector2Int(Mathf.Max(1, _level.gridSize.x), Mathf.Max(1, _level.gridSize.y)));
-
-                // Depth controls
-                int newDepth = Mathf.Max(1, EditorGUILayout.IntField("Depth (Z layers)", Mathf.Max(1, _level.depth)));
-                if (newDepth != _level.depth)
+                _level.depth = newDepth;
+                if (_currentLayer >= _level.depth)
                 {
-                    _level.depth = newDepth;
-                    if (_currentLayer >= _level.depth)
-                    {
-                        _currentLayer = _level.depth - 1;
-                    }
-                }
-
-                CELL_DRAW_SIZE = EditorGUILayout.FloatField("CELL_DRAW_SIZE", Mathf.Max(12f, CELL_DRAW_SIZE));
-                EditorGUILayout.Space(4);
-                _showAllLayersSideBySide = EditorGUILayout.Toggle("Show All Layers Side-by-Side", _showAllLayersSideBySide);
-                _baseScale = EditorGUILayout.FloatField("Base Scale", Mathf.Max(0.5f, _baseScale));
-                _baseDepthScale = EditorGUILayout.FloatField("Base Depth Scale", Mathf.Max(0.5f, _baseDepthScale));
-
-                // Layer selector
-                int newLayer = EditorGUILayout.IntSlider("Current Layer", _currentLayer, 0, Mathf.Max(0, _level.depth - 1));
-                if (newLayer != _currentLayer)
-                {
-                    _currentLayer = newLayer;
-                }
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    EditorUtility.SetDirty(_level);
-                    RebuildOccupancy();
-                }
-
-                EditorGUILayout.Space(6);
-                if (GUILayout.Button("Bake Prefab"))
-                {
-                    BakeLevelPrefab();
+                    _currentLayer = _level.depth - 1;
                 }
             }
 
-            EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Palette", EditorStyles.boldLabel);
+            CELL_DRAW_SIZE = EditorGUILayout.FloatField(
+                "Cell Draw Size",
+                Mathf.Max(12f, CELL_DRAW_SIZE)
+            );
+            EditorGUILayout.Space(2);
+            _showAllLayersSideBySide = EditorGUILayout.Toggle(
+                "Show All Layers Side-by-Side",
+                _showAllLayersSideBySide
+            );
+            _baseScale = EditorGUILayout.FloatField(
+                "Base Scale",
+                Mathf.Max(0.5f, _baseScale)
+            );
+            _baseDepthScale = EditorGUILayout.FloatField(
+                "Base Depth Scale",
+                Mathf.Max(0.5f, _baseDepthScale)
+            );
 
-            using (var sv = new EditorGUILayout.ScrollViewScope(_scrollPalette, GUILayout.Height(position.height * 0.4f)))
+            // Layer selector
+            int newLayer = EditorGUILayout.IntSlider(
+                "Current Layer",
+                _currentLayer,
+                0,
+                Mathf.Max(0, _level.depth - 1)
+            );
+            if (newLayer != _currentLayer)
             {
-                _scrollPalette = sv.scrollPosition;
-
-                if (_settings.palette != null)
-                {
-                    for (int i = 0; i < _settings.palette.Count; i++)
-                    {
-                        var def = _settings.palette[i];
-                        using (new EditorGUILayout.HorizontalScope(GUI.skin.box))
-                        {
-                            bool selected = _selectedPaletteIndex == i;
-                            var style = new GUIStyle(EditorStyles.miniButton) { fixedWidth = 24 };
-
-                            if (GUILayout.Toggle(selected, selected ? "●" : "○", style))
-                            {
-                                _selectedPaletteIndex = i;
-                            }
-                            else
-                            {
-                                if (selected == true && Event.current.type == EventType.MouseDown)
-                                {
-                                    _selectedPaletteIndex = i;
-                                }
-                            }
-
-                            _settings.palette[i] = (PlaceableObjectDef)EditorGUILayout.ObjectField(def, typeof(PlaceableObjectDef), false);
-
-                            if (GUILayout.Button("X", GUILayout.Width(22)))
-                            {
-                                _settings.palette.RemoveAt(i);
-                                if (_selectedPaletteIndex == i) _selectedPaletteIndex = -1;
-                                GUI.FocusControl(null);
-                                break;
-                            }
-                        }
-                    }
-                }
+                _currentLayer = newLayer;
             }
 
-            using (new EditorGUILayout.HorizontalScope())
+            if (EditorGUI.EndChangeCheck())
             {
-                if (GUILayout.Button("Add Palette Slot"))
-                {
-                    _settings.palette.Add(null);
-                    EditorUtility.SetDirty(_settings);
-                }
-                if (GUILayout.Button("New Placeable"))
-                {
-                    CreatePlaceableAsset();
-                }
+                EditorUtility.SetDirty(_level);
+                RebuildOccupancy();
             }
         }
     }
 
+    private void DrawPalette()
+    {
+        // Header + sort/clean button
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Palette", EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Sort & Clean", GUILayout.Width(100)))
+            {
+                SortAndCleanPalette();
+            }
+        }
+
+        EditorGUILayout.Space(2);
+
+        // Palette list – use remaining vertical space
+        using (var sv = new EditorGUILayout.ScrollViewScope(
+                   _scrollPalette,
+                   GUILayout.ExpandHeight(true)))
+        {
+            _scrollPalette = sv.scrollPosition;
+
+            if (_settings.palette != null)
+            {
+                for (int i = 0; i < _settings.palette.Count; i++)
+                {
+                    var def = _settings.palette[i];
+
+                    using (new EditorGUILayout.HorizontalScope(GUI.skin.box))
+                    {
+                        bool selected = _selectedPaletteIndex == i;
+                        var style = new GUIStyle(EditorStyles.miniButton)
+                        {
+                            fixedWidth = 24
+                        };
+
+                        if (GUILayout.Toggle(selected, selected ? "●" : "○", style))
+                        {
+                            _selectedPaletteIndex = i;
+                        }
+
+                        _settings.palette[i] = (PlaceableObjectDef)EditorGUILayout.ObjectField(
+                            def,
+                            typeof(PlaceableObjectDef),
+                            false
+                        );
+
+                        if (GUILayout.Button("X", GUILayout.Width(22)))
+                        {
+                            _settings.palette.RemoveAt(i);
+                            if (_selectedPaletteIndex == i) _selectedPaletteIndex = -1;
+                            GUI.FocusControl(null);
+                            EditorUtility.SetDirty(_settings);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        EditorGUILayout.Space(4);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Add Palette Slot"))
+            {
+                _settings.palette.Add(null);
+                EditorUtility.SetDirty(_settings);
+            }
+            if (GUILayout.Button("New Placeable"))
+            {
+                CreatePlaceableAsset();
+            }
+        }
+    }
+
+    private void SortAndCleanPalette()
+    {
+        if (_settings?.palette == null || _settings.palette.Count == 0)
+            return;
+
+        var list = _settings.palette;
+        var seen = new HashSet<PlaceableObjectDef>();
+        var cleaned = new List<PlaceableObjectDef>();
+
+        // Remove duplicates (same reference); keep first occurrence.
+        foreach (var def in list)
+        {
+            if (def == null)
+            {
+                // keep nulls at the end if you want; here we just drop them:
+                continue;
+            }
+
+            if (seen.Add(def))
+            {
+                cleaned.Add(def);
+            }
+        }
+
+        // Sort alphabetically by objectId or name
+        cleaned.Sort((a, b) =>
+        {
+            if (a == null && b == null) return 0;
+            if (a == null) return 1;
+            if (b == null) return -1;
+
+            string nameA = !string.IsNullOrEmpty(a.name) ? a.name : a.name;
+            string nameB = !string.IsNullOrEmpty(b.name) ? b.name : b.name;
+            return string.Compare(nameA, nameB, System.StringComparison.OrdinalIgnoreCase);
+        });
+
+        list.Clear();
+        list.AddRange(cleaned);
+
+        EditorUtility.SetDirty(_settings);
+    }
+
     // ---------- Right Pane (Grid) ----------
+
     private void DrawRightPane()
     {
-        using (new EditorGUILayout.VerticalScope(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true)))
+        using (new EditorGUILayout.VerticalScope(
+                   GUILayout.ExpandWidth(true),
+                   GUILayout.ExpandHeight(true)))
         {
-            EditorGUILayout.Space(6);
+            EditorGUILayout.Space(2);
+
+            DrawRightToolbar();
+
+            EditorGUILayout.Space(4);
 
             if (_level == null)
             {
-                EditorGUILayout.HelpBox("Create or select a Level asset on the left.", MessageType.Info);
+                EditorGUILayout.HelpBox("Create or select a Level asset.", MessageType.Info);
                 return;
             }
 
@@ -265,43 +409,55 @@ public class GridLevelEditorWindow : EditorWindow
             {
                 GUILayout.Space(GRID_MARGIN);
 
-                using (new EditorGUILayout.VerticalScope(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true)))
+                using (new EditorGUILayout.VerticalScope(
+                           GUILayout.ExpandWidth(true),
+                           GUILayout.ExpandHeight(true)))
                 {
                     GUILayout.Space(GRID_MARGIN);
 
-                    using (var sv = new EditorGUILayout.ScrollViewScope(_scrollGrid, false, false,
-                               GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true)))
+                    using (var sv = new EditorGUILayout.ScrollViewScope(
+                               _scrollGrid,
+                               false,
+                               false,
+                               GUILayout.ExpandWidth(true),
+                               GUILayout.ExpandHeight(true)))
                     {
                         _scrollGrid = sv.scrollPosition;
 
-                        // --- Content size depends on mode ---
                         float layerWidthPx = Mathf.Max(1, _level.gridSize.x) * CELL_DRAW_SIZE;
                         float layerHeightPx = Mathf.Max(1, _level.gridSize.y) * CELL_DRAW_SIZE;
 
                         float totalWidthPx = layerWidthPx;
                         if (_showAllLayersSideBySide)
                         {
-                            totalWidthPx = layerWidthPx * _level.depth + LAYER_GAP * Mathf.Max(0, _level.depth - 1);
+                            totalWidthPx =
+                                layerWidthPx * _level.depth +
+                                LAYER_GAP * Mathf.Max(0, _level.depth - 1);
                         }
 
-                        Rect contentRect = GUILayoutUtility.GetRect(totalWidthPx, layerHeightPx,
+                        Rect contentRect = GUILayoutUtility.GetRect(
+                            totalWidthPx,
+                            layerHeightPx,
                             GUIStyle.none,
                             GUILayout.Width(totalWidthPx),
                             GUILayout.Height(layerHeightPx));
 
                         // background
-                        EditorGUI.DrawRect(contentRect, new Color(0.10f, 0.10f, 0.10f, 0.85f));
+                        EditorGUI.DrawRect(
+                            contentRect,
+                            new Color(0.10f, 0.10f, 0.10f, 0.85f));
                         GUI.Box(contentRect, GUIContent.none);
 
                         if (_showAllLayersSideBySide)
                         {
-                            // Draw each layer, side-by-side
                             for (int z = 0; z < _level.depth; z++)
                             {
-                                Rect layerRect = GetLayerRect(contentRect, z, layerWidthPx);
+                                Rect layerRect = GetLayerRect(
+                                    contentRect,
+                                    z,
+                                    layerWidthPx);
                                 DrawGridLines(layerRect, _level.gridSize);
-                                DrawCenterXMarker(layerRect, _level.gridSize);
-                                DrawLayerHeader(layerRect, z);
+                                DrawCenterXMarker(layerRect, z);
                                 DrawPlacedItems(layerRect, z);
                             }
 
@@ -309,10 +465,8 @@ public class GridLevelEditorWindow : EditorWindow
                         }
                         else
                         {
-                            // Single-layer view (current)
                             DrawGridLines(contentRect, _level.gridSize);
-                            DrawCenterXMarker(contentRect, _level.gridSize);
-                            DrawLayerHeader(contentRect, _currentLayer);
+                            DrawCenterXMarker(contentRect, _currentLayer);
                             DrawPlacedItems(contentRect, _currentLayer);
                             HandleGridInputSingle(contentRect);
                         }
@@ -331,6 +485,28 @@ public class GridLevelEditorWindow : EditorWindow
         }
     }
 
+    private void DrawRightToolbar()
+    {
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+        {
+            GUILayout.FlexibleSpace();
+
+            _level = (LevelGridData)EditorGUILayout.ObjectField(
+                new GUIContent("Active Level"),
+                _level,
+                typeof(LevelGridData),
+                false,
+                GUILayout.Width(280f));
+
+            using (new EditorGUI.DisabledScope(_level == null))
+            {
+                if (GUILayout.Button("Bake Prefab", EditorStyles.toolbarButton, GUILayout.Width(100)))
+                {
+                    BakeLevelPrefab();
+                }
+            }
+        }
+    }
 
     private void DrawGridLines(Rect rect, Vector2Int gridSize)
     {
@@ -340,16 +516,18 @@ public class GridLevelEditorWindow : EditorWindow
         for (int x = 0; x <= gridSize.x; x++)
         {
             float xPos = rect.x + x * CELL_DRAW_SIZE;
-            Handles.DrawLine(new Vector3(xPos, rect.y),
-                             new Vector3(xPos, rect.y + rect.height));
+            Handles.DrawLine(
+                new Vector3(xPos, rect.y),
+                new Vector3(xPos, rect.y + rect.height));
         }
 
         // horizontals (flip Y for IMGUI)
         for (int y = 0; y <= gridSize.y; y++)
         {
             float yPos = rect.y + rect.height - y * CELL_DRAW_SIZE;
-            Handles.DrawLine(new Vector3(rect.x, yPos),
-                             new Vector3(rect.x + rect.width, yPos));
+            Handles.DrawLine(
+                new Vector3(rect.x, yPos),
+                new Vector3(rect.x + rect.width, yPos));
         }
 
         // origin crosshair (data bottom-left)
@@ -360,19 +538,28 @@ public class GridLevelEditorWindow : EditorWindow
         Handles.DrawLine(new Vector3(ox, oy), new Vector3(ox, oy + 10f));
     }
 
-    private void DrawCenterXMarker(Rect rect, Vector2Int gridSize)
+    private void DrawCenterXMarker(Rect rect, int layerZ)
     {
-        float centerXPx = rect.x + (gridSize.x * 0.5f) * CELL_DRAW_SIZE;
+        float centerXPx = rect.x + (_level.gridSize.x * 0.5f) * CELL_DRAW_SIZE;
         Handles.color = new Color(1f, 0.2f, 0.8f, 0.9f);
-        Handles.DrawLine(new Vector3(centerXPx, rect.y),
-                         new Vector3(centerXPx, rect.y + rect.height));
+        Handles.DrawLine(
+            new Vector3(centerXPx, rect.y),
+            new Vector3(centerXPx, rect.y + rect.height));
 
-        var style = new GUIStyle(EditorStyles.miniBoldLabel) { normal = { textColor = Color.white } };
-        GUI.Label(new Rect(centerXPx + 4, rect.y + 2, 100, 16), $"Layer Z={_currentLayer}", style);
+        var style = new GUIStyle(EditorStyles.miniBoldLabel)
+        {
+            normal = { textColor = Color.white }
+        };
+        GUI.Label(
+            new Rect(centerXPx + 4, rect.y + 2, 100, 16),
+            $"Layer Z={layerZ}",
+            style);
     }
 
     private void DrawPlacedItems(Rect rect, int layerZ)
     {
+        if (_level == null || _level.placed == null) return;
+
         foreach (var item in _level.placed)
         {
             if (item == null || item.def == null) continue;
@@ -380,20 +567,27 @@ public class GridLevelEditorWindow : EditorWindow
 
             Rect r = CellRectToPixelsTop(rect, item.origin, item.def.size);
 
-            Color fill = (item.def.editorColor.a > 0f) ? item.def.editorColor : new Color(0.2f, 0.8f, 0.4f, 0.35f);
+            Color fill = (item.def.editorColor.a > 0f)
+                ? item.def.editorColor
+                : new Color(0.2f, 0.8f, 0.4f, 0.35f);
+
             EditorGUI.DrawRect(r, fill);
 
             Handles.color = new Color(fill.r, fill.g, fill.b, 0.95f);
-            Handles.DrawAAPolyLine(2f, new Vector3[]
-            {
-                new Vector3(r.x, r.y),
-                new Vector3(r.x + r.width, r.y),
-                new Vector3(r.x + r.width, r.y + r.height),
-                new Vector3(r.x, r.y + r.height),
-                new Vector3(r.x, r.y),
-            });
+            Handles.DrawAAPolyLine(
+                2f,
+                new Vector3[]
+                {
+                    new Vector3(r.x, r.y),
+                    new Vector3(r.x + r.width, r.y),
+                    new Vector3(r.x + r.width, r.y + r.height),
+                    new Vector3(r.x, r.y + r.height),
+                    new Vector3(r.x, r.y),
+                });
 
-            var label = !string.IsNullOrEmpty(item.def.objectId) ? item.def.objectId : item.def.name;
+            var label = !string.IsNullOrEmpty(item.def.objectId)
+                ? item.def.objectId
+                : item.def.name;
             var centered = new GUIStyle(EditorStyles.boldLabel)
             {
                 alignment = TextAnchor.MiddleCenter,
@@ -403,14 +597,16 @@ public class GridLevelEditorWindow : EditorWindow
         }
     }
 
-    private void HandleGridInput(Rect fullRect)
+    // ---------- Grid Input ----------
+
+    private void HandleGridInputSingle(Rect rect)
     {
         var e = Event.current;
         if (e == null) return;
 
         if (e.type == EventType.MouseDown && e.button == 0)
         {
-            if (!MouseToGridCell(fullRect, e.mousePosition, _level.gridSize, out var cell))
+            if (!MouseToGridCell(rect, e.mousePosition, _level.gridSize, out var cell))
                 return;
 
             Vector3Int key = new Vector3Int(cell.x, cell.y, _currentLayer);
@@ -434,7 +630,45 @@ public class GridLevelEditorWindow : EditorWindow
         }
     }
 
+    private void HandleGridInputSideBySide(Rect fullContent, float layerWidthPx)
+    {
+        var e = Event.current;
+        if (e == null) return;
+        if (e.type != EventType.MouseDown || e.button != 0) return;
+        if (!fullContent.Contains(e.mousePosition)) return;
+
+        for (int z = 0; z < _level.depth; z++)
+        {
+            Rect layerRect = GetLayerRect(fullContent, z, layerWidthPx);
+            if (!layerRect.Contains(e.mousePosition)) continue;
+
+            if (!MouseToGridCell(layerRect, e.mousePosition, _level.gridSize, out var cell))
+                continue;
+
+            Vector3Int key = new Vector3Int(cell.x, cell.y, z);
+
+            if (_cellToItem.TryGetValue(key, out var hitItem))
+            {
+                Undo.RecordObject(_level, "Remove Placed Item");
+                _level.placed.Remove(hitItem);
+                EditorUtility.SetDirty(_level);
+                RebuildOccupancy();
+                e.Use();
+                return;
+            }
+
+            var def = GetSelectedDef();
+            if (def != null)
+            {
+                TryPlace(cell, def, z);
+                e.Use();
+                return;
+            }
+        }
+    }
+
     // ---------- GUI math ----------
+
     private Rect CellRectToPixelsTop(Rect fullRect, Vector2Int origin, Vector2Int size)
     {
         float x = fullRect.x + origin.x * CELL_DRAW_SIZE;
@@ -462,17 +696,23 @@ public class GridLevelEditorWindow : EditorWindow
         return true;
     }
 
+    private Rect GetLayerRect(Rect contentRect, int layerZ, float layerWidthPx)
+    {
+        float x = contentRect.x + layerZ * (layerWidthPx + LAYER_GAP);
+        return new Rect(x, contentRect.y, layerWidthPx, contentRect.height);
+    }
+
     // ---------- Placement ----------
+
     private void TryPlace(Vector2Int origin, PlaceableObjectDef def, int layerZ)
     {
-        // Ensure grid fits in X/Y
-        Vector2Int maxCell = new Vector2Int(origin.x + def.size.x - 1, origin.y + def.size.y - 1);
+        Vector2Int maxCell = new Vector2Int(
+            origin.x + def.size.x - 1,
+            origin.y + def.size.y - 1);
         _level.EnsureFits(origin, maxCell);
 
-        // Ensure depth fits
         _level.EnsureDepth(layerZ);
 
-        // Overlap check in this layer only
         if (!IsAreaFree(origin, def.size, layerZ))
         {
             ShowNotification(new GUIContent("Cannot place: area overlaps another item."));
@@ -510,7 +750,8 @@ public class GridLevelEditorWindow : EditorWindow
     private PlaceableObjectDef GetSelectedDef()
     {
         if (_settings == null || _settings.palette == null) return null;
-        if (_selectedPaletteIndex < 0 || _selectedPaletteIndex >= _settings.palette.Count) return null;
+        if (_selectedPaletteIndex < 0 || _selectedPaletteIndex >= _settings.palette.Count)
+            return null;
         return _settings.palette[_selectedPaletteIndex];
     }
 
@@ -519,15 +760,21 @@ public class GridLevelEditorWindow : EditorWindow
         _cellToItem.Clear();
         if (_level == null) return;
 
-        foreach (var item in _level.placed)
+        if (_level.placed != null)
         {
-            if (item == null || item.def == null) continue;
-            for (int y = 0; y < item.def.size.y; y++)
+            foreach (var item in _level.placed)
             {
-                for (int x = 0; x < item.def.size.x; x++)
+                if (item == null || item.def == null) continue;
+                for (int y = 0; y < item.def.size.y; y++)
                 {
-                    Vector3Int key = new Vector3Int(item.origin.x + x, item.origin.y + y, item.layerZ);
-                    _cellToItem[key] = item;
+                    for (int x = 0; x < item.def.size.x; x++)
+                    {
+                        Vector3Int key = new Vector3Int(
+                            item.origin.x + x,
+                            item.origin.y + y,
+                            item.layerZ);
+                        _cellToItem[key] = item;
+                    }
                 }
             }
         }
@@ -536,78 +783,9 @@ public class GridLevelEditorWindow : EditorWindow
         if (_currentLayer >= _level.depth) _currentLayer = _level.depth - 1;
         if (_currentLayer < 0) _currentLayer = 0;
     }
-    // Single-layer input (original behavior)
-    private void HandleGridInputSingle(Rect rect)
-    {
-        var e = Event.current;
-        if (e == null) return;
-
-        if (e.type == EventType.MouseDown && e.button == 0)
-        {
-            if (!MouseToGridCell(rect, e.mousePosition, _level.gridSize, out var cell))
-                return;
-
-            Vector3Int key = new Vector3Int(cell.x, cell.y, _currentLayer);
-
-            if (_cellToItem.TryGetValue(key, out var hitItem))
-            {
-                Undo.RecordObject(_level, "Remove Placed Item");
-                _level.placed.Remove(hitItem);
-                EditorUtility.SetDirty(_level);
-                RebuildOccupancy();
-                e.Use();
-                return;
-            }
-
-            var def = GetSelectedDef();
-            if (def != null)
-            {
-                TryPlace(cell, def, _currentLayer);
-                e.Use();
-            }
-        }
-    }
-
-    // Side-by-side input (figure out which layer was clicked)
-    private void HandleGridInputSideBySide(Rect fullContent, float layerWidthPx)
-    {
-        var e = Event.current;
-        if (e == null) return;
-        if (e.type != EventType.MouseDown || e.button != 0) return;
-        if (!fullContent.Contains(e.mousePosition)) return;
-
-        // Find the layer sub-rect that contains the mouse
-        for (int z = 0; z < _level.depth; z++)
-        {
-            Rect layerRect = GetLayerRect(fullContent, z, layerWidthPx);
-            if (!layerRect.Contains(e.mousePosition)) continue;
-
-            if (!MouseToGridCell(layerRect, e.mousePosition, _level.gridSize, out var cell))
-                continue;
-
-            Vector3Int key = new Vector3Int(cell.x, cell.y, z);
-
-            if (_cellToItem.TryGetValue(key, out var hitItem))
-            {
-                Undo.RecordObject(_level, "Remove Placed Item");
-                _level.placed.Remove(hitItem);
-                EditorUtility.SetDirty(_level);
-                RebuildOccupancy();
-                e.Use();
-                return;
-            }
-
-            var def = GetSelectedDef();
-            if (def != null)
-            {
-                TryPlace(cell, def, z);
-                e.Use();
-                return;
-            }
-        }
-    }
 
     // ---------- Asset helpers ----------
+
     private void CreatePlaceableAsset()
     {
         string folder = "Assets/Levels/Placeables";
@@ -643,7 +821,8 @@ public class GridLevelEditorWindow : EditorWindow
 
         string baseFolder = _settings.levelsFolder;
         string name = "LevelGridData.asset";
-        string unique = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(baseFolder, name).Replace("\\", "/"));
+        string unique = AssetDatabase.GenerateUniqueAssetPath(
+            Path.Combine(baseFolder, name).Replace("\\", "/"));
 
         var data = ScriptableObject.CreateInstance<LevelGridData>();
         data.levelName = "NewLevel";
@@ -695,23 +874,9 @@ public class GridLevelEditorWindow : EditorWindow
             current = $"{current}/{next}";
         }
     }
-    private Rect GetLayerRect(Rect contentRect, int layerZ, float layerWidthPx)
-    {
-        float x = contentRect.x + layerZ * (layerWidthPx + LAYER_GAP);
-        return new Rect(x, contentRect.y, layerWidthPx, contentRect.height);
-    }
 
-    private void DrawLayerHeader(Rect layerRect, int z)
-    {
-        var style = new GUIStyle(EditorStyles.miniBoldLabel)
-        {
-            alignment = TextAnchor.UpperLeft,
-            normal = { textColor = Color.white }
-        };
-        GUI.Label(new Rect(layerRect.x + 4, layerRect.y + 4, 150, 18), $"Layer Z={z}", style);
-    }
+    // ---------- Bake ----------
 
-    // ---------- Bake (bottom-center X origin, Z = layer * cellSize) ----------
     private void BakeLevelPrefab()
     {
         if (_level == null || _settings == null)
@@ -736,24 +901,21 @@ public class GridLevelEditorWindow : EditorWindow
             {
                 if (item == null || item.def == null || item.def.prefab == null) continue;
 
-                // X: center across item width, then shift by grid center
                 float worldX = (item.origin.x + item.def.size.x * 0.5f - halfGridX) * cs;
-
-                // Y: bottom-up
                 float worldY = (item.origin.y) * cs;
-
-                // Z: per-layer depth
                 float worldZ = (item.layerZ) * cs * _baseDepthScale;
 
                 var go = (GameObject)PrefabUtility.InstantiatePrefab(item.def.prefab);
-                if (go == null) go = Instantiate(item.def.prefab);
+                if (go == null) go = Object.Instantiate(item.def.prefab);
                 go.transform.SetParent(root.transform, true);
                 go.transform.localPosition = new Vector3(worldX, worldY, worldZ) + item.def.prefabOffset;
                 go.name = $"{item.def.objectId}_{item.origin.x}_{item.origin.y}_z{item.layerZ}";
             }
 
-            // Optional: add a component at the root (use your own if needed)
-            if (root.GetComponent<ObstacleSet>() == null) { root.AddComponent<ObstacleSet>(); }
+            if (root.GetComponent<ObstacleSet>() == null)
+            {
+                root.AddComponent<ObstacleSet>();
+            }
 
             root.transform.localScale = Vector3.one * _baseScale;
 
@@ -764,7 +926,8 @@ public class GridLevelEditorWindow : EditorWindow
             }
             else
             {
-                EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath));
+                EditorGUIUtility.PingObject(
+                    AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath));
             }
         }
         finally

@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
-  m_Name: Box6x6
+  m_Name: EnemyPlaceableStrong
   m_EditorClassIdentifier: 
-  objectId: Box3x1
-  prefab: {fileID: 100000, guid: ed6f8910280bb48489b535c28ff40092, type: 3}
-  size: {x: 6, y: 6}
+  objectId: EnemyStrong
+  prefab: {fileID: 1299643256829841830, guid: 111967f9f4788c94c8f4cfaa4ebb901d, type: 3}
+  size: {x: 3, y: 5}
   prefabOffset: {x: 0, y: 0, z: 0}
-  editorColor: {r: 0.8, g: 0.2, b: 0.79752123, a: 0.35}
+  editorColor: {r: 0.6995333, g: 0.05098039, b: 1, a: 0.35}
