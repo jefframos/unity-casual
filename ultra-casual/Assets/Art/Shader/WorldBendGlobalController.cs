@@ -6,15 +6,17 @@ public class WorldBendGlobalController : MonoBehaviour
     [Header("Enable")]
     public bool applyGlobally = true;
     public bool applyGameModeOnly = true;
-    [Tooltip("If true, disables bending entirely (sets strength=0 and turns off keyword).")]
+    [Tooltip("If true, disables bending entirely (sets strength=0).")]
     public bool disableBend = false;
+    [Tooltip("If true, use globe (radial) bend instead of cylindrical.")]
+    public bool bendGlobe = false;
 
     [Header("Targeted Origin")]
     public Transform originTarget;
     public Vector3 originOffset;
     public Vector3 componentMask = new Vector3(0, 0, 1);
 
-    [Header("Axis Source")]
+    [Header("Axis Source (for cylinder mode)")]
     public bool useThisForwardAsAxis = true;
     public Vector3 fixedAxis = new Vector3(0, 0, 1);
 
@@ -29,6 +31,12 @@ public class WorldBendGlobalController : MonoBehaviour
     [Range(0f, 1f)] public float edgeFadeStartPct = 0.85f;
     public bool transparentBlend = false;
 
+    [Header("Tracking Offset")]
+    [Tooltip("Extra world-space offset used before computing bending.\n" +
+             "E.g. set to -playerXZ (y=0) to keep curvature under player.")]
+    public Vector3 trackingOffset = Vector3.zero;
+
+    // Global property IDs
     static readonly int ID_Strength = Shader.PropertyToID("_WB_Strength_G");
     static readonly int ID_Radius = Shader.PropertyToID("_WB_Radius_G");
     static readonly int ID_Axis = Shader.PropertyToID("_WB_Axis_G");
@@ -38,8 +46,10 @@ public class WorldBendGlobalController : MonoBehaviour
     static readonly int ID_BendStart = Shader.PropertyToID("_WB_BendStart_G");
     static readonly int ID_BendEnd = Shader.PropertyToID("_WB_BendEnd_G");
     static readonly int ID_Mask = Shader.PropertyToID("_WB_ComponentMask_G");
+    static readonly int ID_TrackOffset = Shader.PropertyToID("_WB_TrackOffset_G");
 
     static readonly int ID_Disable = Shader.PropertyToID("_WB_DisableBend");
+    static readonly int ID_Globe = Shader.PropertyToID("_WB_BendGlobe");
 
     void OnEnable() => Apply();
     void OnValidate() => Apply();
@@ -47,37 +57,49 @@ public class WorldBendGlobalController : MonoBehaviour
 
     void Apply()
     {
-        // --- Skip when disabled or editor-only ---
         if (!applyGlobally || (applyGameModeOnly && !Application.isPlaying))
         {
             DisableAllKeywords();
             return;
         }
 
-        // --- Handle toggle to stop bending entirely ---
+        // disable full bend
         if (disableBend)
         {
             Shader.SetGlobalFloat(ID_Strength, 0f);
+            Shader.SetGlobalFloat(ID_Disable, 1f);
             DisableAllKeywords();
             return;
         }
 
-        var src = originTarget != null ? originTarget : transform;
+        Shader.SetGlobalFloat(ID_Disable, 0f);
 
+        // Origin
+        var src = originTarget != null ? originTarget : transform;
         Vector3 rawOrigin = src.position + originOffset;
+
         Vector3 mask = new Vector3(
             Mathf.Clamp01(componentMask.x),
             Mathf.Clamp01(componentMask.y),
             Mathf.Clamp01(componentMask.z)
         );
-        Vector3 originWS = new Vector3(rawOrigin.x * mask.x, rawOrigin.y * mask.y, rawOrigin.z * mask.z);
 
+        Vector3 originWS = new Vector3(
+            rawOrigin.x * mask.x,
+            rawOrigin.y * mask.y,
+            rawOrigin.z * mask.z
+        );
+
+        // Axis (for cylinder mode)
         Vector3 axisWS = useThisForwardAsAxis ? transform.forward : fixedAxis;
-        if (axisWS.sqrMagnitude < 1e-8f) axisWS = Vector3.forward;
+        if (axisWS.sqrMagnitude < 1e-8f)
+            axisWS = Vector3.forward;
         axisWS.Normalize();
 
-        Shader.SetGlobalFloat(ID_Disable, disableBend ? 1f : 0f);
-        // --- Push globals ---
+        // Push globals
+        Shader.SetGlobalFloat(ID_Globe, bendGlobe ? 1f : 0f);
+
+
         Shader.SetGlobalFloat(ID_Strength, strength);
         Shader.SetGlobalFloat(ID_Radius, Mathf.Max(0.01f, radius));
         Shader.SetGlobalVector(ID_Axis, new Vector4(axisWS.x, axisWS.y, axisWS.z, 0));
@@ -88,8 +110,13 @@ public class WorldBendGlobalController : MonoBehaviour
         Shader.SetGlobalFloat(ID_BendEnd, bendEnd);
         Shader.SetGlobalVector(ID_Mask, new Vector4(mask.x, mask.y, mask.z, 0));
 
-        // --- Enable keywords ---
+        Shader.SetGlobalVector(
+            ID_TrackOffset,
+            new Vector4(trackingOffset.x, trackingOffset.y, trackingOffset.z, 0)
+        );
+
         Shader.EnableKeyword("_BEND_USE_GLOBAL");
+
         if (transparentBlend)
         {
             Shader.EnableKeyword("_EDGE_FADE_TRANSPARENT");

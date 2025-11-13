@@ -4,7 +4,10 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
     {
         _BaseMap ("Base Map", 2D) = "white" {}
         _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-        _WB_DisableBend("Disable Bend (0/1)", Float) = 0
+
+        // Kept so you see them in inspector, but driven by Shader.SetGlobalFloat
+        //_WB_DisableBend("Disable Bend (0/1)", Float) = 0
+        //_WB_BendGlobe("Globe Bend (0 = Cyl, 1 = Globe)", Float) = 0
     }
 
     SubShader
@@ -21,16 +24,15 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
         ZTest LEqual
         Blend SrcAlpha OneMinusSrcAlpha
 
-        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
+        // ---------------------------------------------------------
         // Forward (lit + shadows)
-        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
+        // ---------------------------------------------------------
         Pass
         {
             Name "ForwardBasicShadow"
             Tags { "LightMode" = "UniversalForward" }
 
             HLSLPROGRAM
-            // WebGL - friendly
             #pragma target 2.0
             #pragma prefer_hlslcc gles
             #pragma vertex   vert
@@ -43,7 +45,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
 
-            // Feature toggles you use
+            // Feature toggles
             #pragma multi_compile _ _BEND_USE_GLOBAL
             #pragma multi_compile _ _EDGE_FADE_DITHER _EDGE_FADE_TRANSPARENT
 
@@ -53,28 +55,32 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
 
+            // -------- Per-material (textures/colors only) --------
             CBUFFER_START(UnityPerMaterial)
-            float4 _BaseColor;
-            float4 _BaseMap_ST;
-            float _WB_DisableBend;
+                float4 _BaseColor;
+                float4 _BaseMap_ST;
             CBUFFER_END
 
-            // Globals (set via Shader.SetGlobal *)
+            // -------- GLOBALS (driven by controller) --------
+            float _WB_DisableBend;      // <- GLOBAL, not in CBUFFER
+            float _WB_BendGlobe;        // <- GLOBAL, not in CBUFFER
+
             float _WB_Strength_G;
             float _WB_Radius_G;
-            float4 _WB_Axis_G; // xyz
-            float4 _WB_Origin_G; // xyz
+            float4 _WB_Axis_G;
+            float4 _WB_Origin_G;
             float _WB_EdgeFadeStartPct_G;
             float _WB_MaxYDrop_G;
             float _WB_BendStart_G;
             float _WB_BendEnd_G;
-            float4 _WB_ComponentMask_G; // xyz
+            float4 _WB_ComponentMask_G;
+            float4 _WB_TrackOffset_G;   // world-space tracking offset
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float3 normalOS : NORMAL;
-                float2 uv : TEXCOORD0;
+                float3 normalOS   : NORMAL;
+                float2 uv         : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -82,9 +88,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             {
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
-                float3 normalWS : TEXCOORD1;
-                float2 uv : TEXCOORD2;
-                float distAbs : TEXCOORD3;
+                float3 normalWS   : TEXCOORD1;
+                float2 uv         : TEXCOORD2;
+                float  distAbs    : TEXCOORD3;
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                 float4 shadowCoord : TEXCOORD4;
                 #endif
@@ -92,7 +98,6 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            // no arrays / uints
             float ArcSag(float dist, float radius)
             {
                 float R = max(radius, 1e-3);
@@ -115,29 +120,45 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 {
                     OUT.positionWS = posWS;
                     OUT.positionCS = TransformWorldToHClip(posWS);
-                    OUT.normalWS = normalize(nrmWS);
-                    OUT.uv = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw; // explicit UV transform
-                    OUT.distAbs = 0.0;
+                    OUT.normalWS   = normalize(nrmWS);
+                    OUT.uv         = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
+                    OUT.distAbs    = 0.0;
 
                     #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-                    OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
+                        OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
                     #endif
                     return OUT;
                 }
 
                 // Read globals
-                float strength = _WB_Strength_G;
-                float radius = _WB_Radius_G;
-                float3 axisWS = normalize(_WB_Axis_G.xyz);
-                float3 originWS = _WB_Origin_G.xyz;
-                float maxDrop = _WB_MaxYDrop_G;
-                float bendStart = _WB_BendStart_G;
-                float bendEnd = _WB_BendEnd_G;
-                float3 compMask = _WB_ComponentMask_G.xyz;
+                float  strength    = _WB_Strength_G;
+                float  radius      = _WB_Radius_G;
+                float3 axisWS      = normalize(_WB_Axis_G.xyz);
+                float3 originWS    = _WB_Origin_G.xyz;
+                float  maxDrop     = _WB_MaxYDrop_G;
+                float  bendStart   = _WB_BendStart_G;
+                float  bendEnd     = _WB_BendEnd_G;
+                float3 compMask    = _WB_ComponentMask_G.xyz;
+                float3 trackOffset = _WB_TrackOffset_G.xyz;
 
-                float3 delta = (posWS - originWS) * compMask;
-                float d = dot(delta, axisWS);
-                float ad = abs(d);
+                // Slide bend field with tracking offset
+                float3 bendPosWS = posWS + trackOffset;
+
+                // Deltas from origin
+                float3 deltaRaw  = bendPosWS - originWS;    // unmasked
+                float3 deltaMask = deltaRaw * compMask;     // masked (for cyl)
+
+                // Cylinder distance (original behaviour)
+                float adCylinder = abs(dot(deltaMask, axisWS));
+
+                // Globe distance: radial in XZ about SAME origin
+                float3 horiz = deltaRaw;
+                horiz.y = 0.0;
+                float adGlobe = length(horiz);
+
+                // 0 = cylinder, 1 = globe
+                float tGlobe = saturate(_WB_BendGlobe);
+                float ad = lerp(adCylinder, adGlobe, tGlobe);
 
                 float originFadeT = 1.0;
                 if (bendEnd > bendStart)
@@ -151,13 +172,14 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 OUT.positionWS = posWS;
                 OUT.positionCS = TransformWorldToHClip(posWS);
-                OUT.normalWS = normalize(nrmWS);
-                OUT.uv = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
-                OUT.distAbs = ad;
+                OUT.normalWS   = normalize(nrmWS);
+                OUT.uv         = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
+                OUT.distAbs    = ad;
 
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-                OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
+                    OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
                 #endif
+
                 return OUT;
             }
 
@@ -166,34 +188,39 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 half4 baseTex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);
                 half4 baseCol = baseTex * _BaseColor;
 
-                // Main light with shadows
+                // DEBUG (optional): uncomment to verify the toggle
+                // return half4(_WB_BendGlobe, 0, 1 - _WB_BendGlobe, 1);
+
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-                Light L = GetMainLight(IN.shadowCoord);
+                    Light L = GetMainLight(IN.shadowCoord);
                 #else
-                float4 sc = TransformWorldToShadowCoord(IN.positionWS);
-                Light L = GetMainLight(sc);
+                    float4 sc = TransformWorldToShadowCoord(IN.positionWS);
+                    Light L = GetMainLight(sc);
                 #endif
 
                 half3 N = normalize(IN.normalWS);
-                half NdotL = saturate(dot(N, L.direction));
+                half  NdotL = saturate(dot(N, L.direction));
                 half3 lit = baseCol.rgb * (L.color * (NdotL * L.shadowAttenuation));
                 half3 ambient = SampleSH(N) * baseCol.rgb;
                 half3 color = lit + ambient;
 
                 float fadeAlpha = 1.0;
                 #if defined(_EDGE_FADE_TRANSPARENT)
-                float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
-                fadeAlpha = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
+                    float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
+                    fadeAlpha = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
                 #endif
 
                 return half4(color, baseCol.a * fadeAlpha);
+
+                return half4(_WB_BendGlobe, 0, 1 - _WB_BendGlobe, 1);
+
             }
             ENDHLSL
         }
 
-        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
-        // ShadowCaster (bent + faded)
-        // -- -- -- -- -- -- -- -- -- -- -- -- -- -
+        // ---------------------------------------------------------
+        // ShadowCaster
+        // ---------------------------------------------------------
         Pass
         {
             Name "ShadowCaster"
@@ -216,6 +243,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
+            // Globals
             float _WB_Strength_G;
             float _WB_Radius_G;
             float4 _WB_Axis_G;
@@ -225,20 +253,22 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             float _WB_BendStart_G;
             float _WB_BendEnd_G;
             float4 _WB_ComponentMask_G;
+            float4 _WB_TrackOffset_G;
 
             float _WB_DisableBend;
+            float _WB_BendGlobe;
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float3 normalOS : NORMAL;
+                float3 normalOS   : NORMAL;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float distAbs : TEXCOORD0;
+                float  distAbs    : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -263,22 +293,33 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 if (_WB_DisableBend > 0.5)
                 {
                     OUT.positionCS = TransformWorldToHClip(ApplyShadowBias(posWS, nrmWS, 0));
-                    OUT.distAbs = 0;
+                    OUT.distAbs    = 0;
                     return OUT;
                 }
 
-                float strength = _WB_Strength_G;
-                float radius = _WB_Radius_G;
-                float3 axisWS = normalize(_WB_Axis_G.xyz);
-                float3 originWS = _WB_Origin_G.xyz;
-                float maxDrop = _WB_MaxYDrop_G;
-                float bendStart = _WB_BendStart_G;
-                float bendEnd = _WB_BendEnd_G;
-                float3 compMask = _WB_ComponentMask_G.xyz;
+                float  strength    = _WB_Strength_G;
+                float  radius      = _WB_Radius_G;
+                float3 axisWS      = normalize(_WB_Axis_G.xyz);
+                float3 originWS    = _WB_Origin_G.xyz;
+                float  maxDrop     = _WB_MaxYDrop_G;
+                float  bendStart   = _WB_BendStart_G;
+                float  bendEnd     = _WB_BendEnd_G;
+                float3 compMask    = _WB_ComponentMask_G.xyz;
+                float3 trackOffset = _WB_TrackOffset_G.xyz;
 
-                float3 delta = (posWS - originWS) * compMask;
-                float d = dot(delta, axisWS);
-                float ad = abs(d);
+                float3 bendPosWS = posWS + trackOffset;
+
+                float3 deltaRaw  = bendPosWS - originWS;
+                float3 deltaMask = deltaRaw * compMask;
+
+                float adCylinder = abs(dot(deltaMask, axisWS));
+
+                float3 horiz = deltaRaw;
+                horiz.y = 0.0;
+                float adGlobe = length(horiz);
+
+                float tGlobe = saturate(_WB_BendGlobe);
+                float ad = lerp(adCylinder, adGlobe, tGlobe);
 
                 float originFadeT = 1.0;
                 if (bendEnd > bendStart)
@@ -291,7 +332,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 posWS.y -= sag * originFadeT;
 
                 OUT.positionCS = TransformWorldToHClip(ApplyShadowBias(posWS, nrmWS, 0));
-                OUT.distAbs = ad;
+                OUT.distAbs    = ad;
                 return OUT;
             }
 
@@ -299,7 +340,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             {
                 float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
                 float alpha = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
-                clip(alpha - 0.001); // keep hard clip in shadow map
+                clip(alpha - 0.001);
                 return 0;
             }
             ENDHLSL
