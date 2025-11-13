@@ -478,7 +478,7 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
             Vector3 planar = fwd * _forwardSpeed + right * _sideSpeed;
             Vector3 vertical = up * _upSpeed;
 
-            lin = planar + vertical;
+            lin = planar;// + vertical;
             ang = Vector3.zero; // you can add some spin if you want
         }
         // Otherwise fall back to launcher-based velocity inheritance

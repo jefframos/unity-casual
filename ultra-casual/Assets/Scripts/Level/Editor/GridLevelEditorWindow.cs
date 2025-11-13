@@ -7,10 +7,11 @@ public class GridLevelEditorWindow : EditorWindow
 {
     private const float LEFT_PANE_WIDTH = 280f;
     private const float GRID_MARGIN = 80f;
-    private const float CELL_DRAW_SIZE = 24f;
+    private float CELL_DRAW_SIZE = 24f;
     private const float LAYER_GAP = 24f;          // pixels between layers in side-by-side mode
     private bool _showAllLayersSideBySide = false;
     private float _baseScale = 1.0f;
+    private float _baseDepthScale = 1.0f;
 
     private LevelEditorSettings _settings;
     private LevelGridData _level;
@@ -163,9 +164,11 @@ public class GridLevelEditorWindow : EditorWindow
                     }
                 }
 
+                CELL_DRAW_SIZE = EditorGUILayout.FloatField("CELL_DRAW_SIZE", Mathf.Max(12f, CELL_DRAW_SIZE));
                 EditorGUILayout.Space(4);
                 _showAllLayersSideBySide = EditorGUILayout.Toggle("Show All Layers Side-by-Side", _showAllLayersSideBySide);
                 _baseScale = EditorGUILayout.FloatField("Base Scale", Mathf.Max(0.5f, _baseScale));
+                _baseDepthScale = EditorGUILayout.FloatField("Base Depth Scale", Mathf.Max(0.5f, _baseDepthScale));
 
                 // Layer selector
                 int newLayer = EditorGUILayout.IntSlider("Current Layer", _currentLayer, 0, Mathf.Max(0, _level.depth - 1));
@@ -740,7 +743,7 @@ public class GridLevelEditorWindow : EditorWindow
                 float worldY = (item.origin.y) * cs;
 
                 // Z: per-layer depth
-                float worldZ = (item.layerZ) * cs;
+                float worldZ = (item.layerZ) * cs * _baseDepthScale;
 
                 var go = (GameObject)PrefabUtility.InstantiatePrefab(item.def.prefab);
                 if (go == null) go = Instantiate(item.def.prefab);

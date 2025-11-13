@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
-  m_Name: Box1x1
+  m_Name: Box4x4
   m_EditorClassIdentifier: 
-  objectId: Box1x1
-  prefab: {fileID: 100000, guid: dec2ebcdd8f671b46a7e29c1ffa92853, type: 3}
-  size: {x: 1, y: 1}
+  objectId: Box3x1
+  prefab: {fileID: 100000, guid: 42e3c49f639df5840bfabe0ca54e64cd, type: 3}
+  size: {x: 6, y: 2}
   prefabOffset: {x: 0, y: 0, z: 0}
-  editorColor: {r: 0.2, g: 0.8, b: 0.4, a: 0.35}
+  editorColor: {r: 0.8, g: 0.2, b: 0.79752123, a: 0.35}

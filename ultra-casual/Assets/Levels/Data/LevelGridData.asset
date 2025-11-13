@@ -13,91 +13,34 @@ MonoBehaviour:
   m_Name: LevelGridData
   m_EditorClassIdentifier: 
   levelName: Level1
-  gridSize: {x: 6, y: 6}
-  cellSize: 5
+  gridSize: {x: 8, y: 12}
+  cellSize: 1
   depth: 2
   placed:
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 2, y: 1}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 2, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 3, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 4, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 3, y: 1}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 4, y: 1}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 5, y: 1}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 5, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 1, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 1, y: 1}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 3, y: 2}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
-    origin: {x: 4, y: 2}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
-    origin: {x: 0, y: 2}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
-    origin: {x: 1, y: 2}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}
-    origin: {x: 3, y: 1}
-    layerZ: 1
-  - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}
-    origin: {x: 2, y: 0}
-    layerZ: 1
   - def: {fileID: 11400000, guid: 906ec84004c414e408b6a3ae0e0fa5d5, type: 2}
     origin: {x: 1, y: 0}
     layerZ: 1
+  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
+    origin: {x: 2, y: 0}
+    layerZ: 0
   - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
     origin: {x: 2, y: 2}
     layerZ: 0
-  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
-    origin: {x: 0, y: 3}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: e871f7c5765c92349b7d8e43062575b0, type: 2}
-    origin: {x: 2, y: 3}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}
-    origin: {x: 3, y: 4}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
-    origin: {x: 2, y: 1}
-    layerZ: 1
   - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
     origin: {x: 4, y: 0}
-    layerZ: 1
-  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
-    origin: {x: 0, y: 0}
     layerZ: 0
-  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
-    origin: {x: 1, y: 1}
-    layerZ: 1
-  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
     origin: {x: 4, y: 2}
-    layerZ: 1
-  - def: {fileID: 11400000, guid: bd1f3d12e1271994692b9af7eec80c67, type: 2}
-    origin: {x: 5, y: 2}
     layerZ: 0
-  - def: {fileID: 11400000, guid: bd1f3d12e1271994692b9af7eec80c67, type: 2}
-    origin: {x: 1, y: 3}
+  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
+    origin: {x: 4, y: 4}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: d7594671e37707642952b04b6433bdf2, type: 2}
+    origin: {x: 3, y: 6}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: d7594671e37707642952b04b6433bdf2, type: 2}
+    origin: {x: 2, y: 7}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 54fde3aba27b1364a8355fb6b8be787c, type: 2}
+    origin: {x: 3, y: 8}
     layerZ: 0

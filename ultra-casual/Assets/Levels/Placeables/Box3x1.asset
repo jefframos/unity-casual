@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Box3x1
   m_EditorClassIdentifier: 
   objectId: Box3x1
-  prefab: {fileID: 100000, guid: 5f3077ff812a84a4da03f757232af208, type: 3}
+  prefab: {fileID: 100000, guid: 0be221c5d15d16544853de0257547084, type: 3}
   size: {x: 3, y: 1}
   prefabOffset: {x: 0, y: 0, z: 0}
   editorColor: {r: 0.8, g: 0.2, b: 0.79752123, a: 0.35}

@@ -153,7 +153,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 // Globe distance: radial in XZ about SAME origin
                 float3 horiz = deltaRaw;
-                horiz.y = 0.0;
+                //horiz.y = 0.0;
                 float adGlobe = length(horiz);
 
                 // 0 = cylinder, 1 = globe

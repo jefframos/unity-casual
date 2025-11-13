@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   objectId: Barrel1x2
   prefab: {fileID: 100000, guid: 9b987e2cb44b74e4e974e0a0d6493920, type: 3}
-  size: {x: 1, y: 2}
+  size: {x: 2, y: 4}
   prefabOffset: {x: 0, y: 0, z: 0}
   editorColor: {r: 0.690566, g: 0.30797464, b: 0.108145185, a: 0.35}

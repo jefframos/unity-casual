@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
-  m_Name: MetalBox1x1
+  m_Name: Box2x2
   m_EditorClassIdentifier: 
   objectId: Box1x1
-  prefab: {fileID: 100000, guid: bdcd4450f49a2bd42b8bf97618436d45, type: 3}
+  prefab: {fileID: 100000, guid: dec2ebcdd8f671b46a7e29c1ffa92853, type: 3}
   size: {x: 2, y: 2}
   prefabOffset: {x: 0, y: 0, z: 0}
-  editorColor: {r: 0.6754716, g: 0.6754716, b: 0.6754716, a: 0.35}
+  editorColor: {r: 0.2, g: 0.8, b: 0.4, a: 0.35}

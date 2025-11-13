@@ -71,7 +71,7 @@ public class ExplosiveEffector : MonoBehaviour
 
     // --------- Contact routing ---------
 
-    private void OnTriggerEnter(Collider other) => HandleContact(other, null);
+    //private void OnTriggerEnter(Collider other) => HandleContact(other, null);
     private void OnCollisionEnter(Collision c)
     {
         Vector3? normal = c.contactCount > 0 ? c.GetContact(0).normal : (Vector3?)null;
@@ -89,6 +89,7 @@ public class ExplosiveEffector : MonoBehaviour
         // Player → instant explode.
         if (!string.IsNullOrEmpty(definition.playerTag) && MatchesTagOrParent(other.transform, definition.playerTag))
         {
+            Debug.Log("EXPLODE PLAYER");
             ExplodeNow();
             return;
         }
@@ -300,7 +301,6 @@ public class ExplosiveEffector : MonoBehaviour
                     if (definition.useAddExplosionForce)
                     {
                         // Emulate radial explosion force
-                        Debug.Log(forceMag);
                         rb.AddExplosionForce(forceMag, transform.position, radius, definition.explosionUpwardsModifier,
                                              definition.forceMode == ForceMode.Impulse ? ForceMode.Impulse : ForceMode.Force);
                     }

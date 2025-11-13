@@ -217,7 +217,6 @@ public class RagdollEnemy : MonoBehaviour, IResettable
 
             if (supportMoved || supportSpun || separated)
             {
-                Debug.Log($"{supportMoved}, {supportSpun}, {separated}");
                 EnterRagdoll(); // not dead
             }
         }

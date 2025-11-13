@@ -206,6 +206,11 @@ MonoBehaviour:
   ragdollAngularDamping: 0.5
   inheritLauncherVelocity: 1
   resetMassPropsOnSwitch: 1
+  useDeterministicRamp: 1
+  rampCollider: {fileID: 0}
+  rampStartTransform: {fileID: 2745443948542491075}
+  rampExtraDistance: 0.1
+  rampSpeedMultiplier: 1
   launchAngleOffset: 10
 --- !u!1 &3587400043912227957
 GameObject:
