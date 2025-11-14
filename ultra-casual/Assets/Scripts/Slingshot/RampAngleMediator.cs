@@ -1,6 +1,6 @@
 using UnityEngine;
 using System;
-
+[DefaultExecutionOrder(-100)]
 public class RampAngleMediator : MonoBehaviour
 {
     public static RampAngleMediator Instance { get; private set; }

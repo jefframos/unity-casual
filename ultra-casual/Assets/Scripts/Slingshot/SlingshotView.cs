@@ -42,6 +42,7 @@ public class SlingshotView : MonoBehaviour
     private bool _overridePouch;
 
     // We animate the MIDPOINT; the half-offset keeps left/right spacing constant.
+    public Vector3 _snapStartMidOffset;          // midpoint between anchors at launch time
     private Vector3 _snapStartMid;          // midpoint between anchors at launch time
     private Vector3 _snapEndMid;            // target idle midpoint (+overshoot)
     private Vector3 _halfOffset;            // (right - left) * 0.5 at launch time (constant during snap)
@@ -90,7 +91,7 @@ public class SlingshotView : MonoBehaviour
                 if (rightPole) { rightBand.SetPosition(0, rightPole.position); rightBand.SetPosition(1, rightNow + bandOffset); }
 
                 // Keep start and spacing fresh so when we flip to animation it's seamless.
-                _snapStartMid = 0.5f * (leftNow + rightNow);
+                _snapStartMid = 0.5f * (leftNow + rightNow) + _snapStartMidOffset;
                 _halfOffset = (rightNow - leftNow) * 0.5f;
 
                 if (bandConnector != null) bandConnector.position = _snapStartMid + bandOffset;
@@ -239,7 +240,7 @@ public class SlingshotView : MonoBehaviour
         Vector3 overshootDir = (endMid - center).sqrMagnitude < 1e-6f ? fwd : (endMid - center).normalized;
         endMid += overshootDir * snapOvershoot;
 
-        _snapStartMid = pulledPouchWorldPos;
+        _snapStartMid = pulledPouchWorldPos + _snapStartMidOffset;
         _snapEndMid = endMid;
         _halfOffset = Vector3.zero;
 
@@ -263,7 +264,7 @@ public class SlingshotView : MonoBehaviour
         Vector3 overshootDir = (endMid - center).sqrMagnitude < 1e-6f ? fwd : (endMid - center).normalized;
         endMid += overshootDir * snapOvershoot;
 
-        _snapStartMid = startMid;
+        _snapStartMid = startMid + _snapStartMidOffset;
         _snapEndMid = endMid;
 
         // Keep constant spacing: half vector from mid to each side at launch.

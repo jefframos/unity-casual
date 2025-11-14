@@ -275,9 +275,11 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         if (launcherBody != null)
         {
             launcherBody.useGravity = false;
-            launcherBody.isKinematic = true;
+            launcherBody.isKinematic = false;
+
             launcherBody.linearVelocity = Vector3.zero;
             launcherBody.angularVelocity = Vector3.zero;
+            launcherBody.isKinematic = true;
         }
 
         // Compute starting local X/Z from rampStartTransform (or fallback)

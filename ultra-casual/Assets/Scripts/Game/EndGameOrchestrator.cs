@@ -89,7 +89,6 @@ public class EndGameOrchestrator : MonoBehaviour
 
         if (nextIsHighscore)
         {
-            Debug.LogWarning("New High Score Triggered");
             if (scorePresenter)
             {
                 // Start but don't await; coin flights run while the presenter handles UI.

@@ -189,6 +189,17 @@ public class GameManager : MonoBehaviour
         {
             EndGame();
 
+            var deathsCopy = LevelTrackerMediator.Instance.GetDeathCountsSinceRefreshCopy();
+
+            foreach (var kvp in deathsCopy)
+            {
+                EnemyGrade grade = kvp.Key;
+                int deaths = kvp.Value;
+
+                Debug.Log($"[DeathCounter] Grade: {grade} | Deaths this refresh: {deaths}");
+            }
+
+
             var endGameOrchestrator = FindObjectsByType<EndGameOrchestrator>(FindObjectsSortMode.None)
                 .FirstOrDefault();
 

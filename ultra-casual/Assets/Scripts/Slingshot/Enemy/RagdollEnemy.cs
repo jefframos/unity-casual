@@ -353,8 +353,6 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         if (_isRagdolled) return;
         _isRagdolled = true;
 
-        Debug.LogWarning("RagdollEnemy EnterRagdoll");
-
         if (animator) animator.enabled = false;
 
         if (rig != null)

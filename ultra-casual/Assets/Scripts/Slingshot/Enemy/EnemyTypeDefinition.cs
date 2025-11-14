@@ -8,6 +8,7 @@ public class EnemyTypeDefinition : ScriptableObject
 {
     [Header("Identity")]
     public EnemyGrade type;
+    public Color color;
 
     [Header("Presentation")]
     public Sprite icon;         // for UI / HUD / cards, etc.

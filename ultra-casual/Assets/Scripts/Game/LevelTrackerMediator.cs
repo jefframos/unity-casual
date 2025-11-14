@@ -42,6 +42,16 @@ public class LevelTrackerMediator : MonoBehaviour
     // Internal stats
     private readonly Dictionary<EnemyGrade, EnemyStats> _stats = new();
 
+    // NEW: per-refresh death counter (only counts deaths that happened AFTER the last RefreshLevels call)
+    private readonly Dictionary<EnemyGrade, int> _deathCountsSinceRefresh = new();
+
+    /// <summary>
+    /// Read-only view of death counts since last RefreshLevels().
+    /// </summary>
+    public IReadOnlyDictionary<EnemyGrade, int> DeathCountsSinceRefresh => _deathCountsSinceRefresh;
+
+    public bool persistentLevels = false;
+
     private struct EnemyStats
     {
         public int total;
@@ -65,16 +75,21 @@ public class LevelTrackerMediator : MonoBehaviour
     {
         UnhookAllTrackers();
         _stats.Clear();
+        _deathCountsSinceRefresh.Clear();
     }
 
     /// <summary>
     /// Called by GameManager when a new level/run is starting.
     /// Finds all LevelEnemyTracker, hooks events, rebuilds stats and notifies UI.
+    /// Also resets the per-refresh death counter.
     /// </summary>
     public void RefreshLevels()
     {
         UnhookAllTrackers();
         _stats.Clear();
+
+        // RESET death counter each time we refresh levels
+        _deathCountsSinceRefresh.Clear();
 
         // Find all trackers in the scene
         var trackers = FindObjectsByType<LevelEnemyTracker>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -82,6 +97,11 @@ public class LevelTrackerMediator : MonoBehaviour
         {
             if (tracker == null) continue;
             _trackers.Add(tracker);
+
+            if (!persistentLevels)
+            {
+                tracker.Reset();
+            }
 
             tracker.onEnemyRegistered.AddListener(OnEnemyRegistered);
             tracker.onEnemyDied.AddListener(OnEnemyDied);
@@ -128,11 +148,19 @@ public class LevelTrackerMediator : MonoBehaviour
 
         var grade = enemy.grade;
 
+        // Update main stats
         if (_stats.TryGetValue(grade, out var stats))
         {
             stats.dead = Mathf.Min(stats.dead + 1, stats.total);
             _stats[grade] = stats;
         }
+
+        // UPDATE per-refresh death counter
+        if (!_deathCountsSinceRefresh.TryGetValue(grade, out var deathCount))
+        {
+            deathCount = 0;
+        }
+        _deathCountsSinceRefresh[grade] = deathCount + 1;
 
         RaiseStatsChangedFor(grade);
     }
@@ -157,7 +185,7 @@ public class LevelTrackerMediator : MonoBehaviour
 
     public void RaiseStatsRebuilt()
     {
-        //if (OnStatsRebuilt == null) return;
+        if (OnStatsRebuilt == null) return;
 
         var list = new List<EnemyStatsSnapshot>(_stats.Count);
         foreach (var kvp in _stats)
@@ -166,8 +194,6 @@ public class LevelTrackerMediator : MonoBehaviour
             var stats = kvp.Value;
             list.Add(new EnemyStatsSnapshot(grade, stats.total, stats.dead));
         }
-        Debug.Log(_stats);
-        Debug.Log("FIX THIS RaiseStatsRebuilt");
 
         OnStatsRebuilt?.Invoke(list);
     }
@@ -184,5 +210,13 @@ public class LevelTrackerMediator : MonoBehaviour
         {
             OnEnemyStatsChanged.Invoke(grade, 0, 0);
         }
+    }
+
+    /// <summary>
+    /// Optional helper if you prefer a copy instead of the live dictionary reference.
+    /// </summary>
+    public Dictionary<EnemyGrade, int> GetDeathCountsSinceRefreshCopy()
+    {
+        return new Dictionary<EnemyGrade, int>(_deathCountsSinceRefresh);
     }
 }

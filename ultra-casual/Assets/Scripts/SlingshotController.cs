@@ -71,6 +71,7 @@ public class SlingshotController : MonoBehaviour, IGameController
 
     [Tooltip("If no transform is provided, this is the max downward offset (in meters) at max pull.")]
     public float maxDownOffset = 0.5f;
+    public float yOffset = 0f;
 
     private void OnValidate()
     {
@@ -275,7 +276,7 @@ public class SlingshotController : MonoBehaviour, IGameController
             float downY = fullDownOffsetY * back01;
 
             // Apply offset along world Y (if you want "down" along a custom axis, use -view.upAxis instead)
-            targetPos += new Vector3(0f, downY, 0f);
+            targetPos += new Vector3(0f, downY + yOffset, 0f);
 
             // Smooth toward the new target position
             const float lerpSpeed = 0.1f;

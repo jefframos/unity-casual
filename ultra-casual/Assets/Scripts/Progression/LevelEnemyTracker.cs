@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -179,5 +180,10 @@ public class LevelEnemyTracker : MonoBehaviour
         _aliveCount = Mathf.Max(0, _totalCount - _deadCount);
 
         onEnemyCountsChanged?.Invoke(_aliveCount, _deadCount);
+    }
+
+    internal void Reset()
+    {
+        RefreshEnemiesInLevel();
     }
 }

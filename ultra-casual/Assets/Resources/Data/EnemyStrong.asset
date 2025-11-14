@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: EnemyStrong
   m_EditorClassIdentifier: 
   type: 2
-  icon: {fileID: 0}
+  color: {r: 0.9924528, g: 0.24690565, b: 0.065539196, a: 1}
+  icon: {fileID: 21300000, guid: 39d1c1c8a941a324fa885907539132f1, type: 3}
   value: 100
   killImpulse: 80
   mass: 50
