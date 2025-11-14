@@ -64,6 +64,12 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     public UnityEvent onDeath;
     public event Action<RagdollEnemy> OnDied;
 
+    [Header("Fall Detection (generic)")]
+    [Tooltip("Invoked when we detect the start of a fall (approximate).")]
+    public UnityEvent onFallStarted;
+    [Tooltip("Invoked when the fall ends (approximate). Also fires if the enemy dies mid-fall.")]
+    public UnityEvent onFallEnded;
+
     // --- runtime ---
     private bool _isDead;
     private bool _isRagdolled;
@@ -72,6 +78,9 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     private bool _isGrounded, _wasGrounded;
     private float _ungroundedTimer;
     private bool _fallArmed; // only used if enableFallDeath
+
+    // generic fall state
+    private bool _isFalling;
 
     private Vector3 _prevVelocity;
     private float _startupTimer;
@@ -82,9 +91,14 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     private Vector3 _startPos;
     private Quaternion _startRot;
 
+    [HideInInspector] public EnemyTypeDefinition enemyDefinition;
+
     private const float WEAK_KILL_IMPULSE = 50f;
-    private const float STANDARD_KILL_IMPULSE = 75f;
-    private const float HEAVY_KILL_IMPULSE = 120f;
+    private const float STANDARD_KILL_IMPULSE = 60f;
+    private const float HEAVY_KILL_IMPULSE = 90f;
+
+    // Optional public read-only flag for other code
+    public bool IsFalling => _isFalling;
 
     void Reset()
     {
@@ -126,6 +140,7 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         _fallArmed = false;
         _ungroundedTimer = 0f;
         _startupTimer = startupGraceTime;
+        _isFalling = false;
 
         if (animator)
         {
@@ -138,6 +153,48 @@ public class RagdollEnemy : MonoBehaviour, IResettable
 
         if (ownKillTrigger) ownKillTrigger.isTrigger = true;
 
+        var db = EnemyTypeDatabase.Instance;
+        if (db != null)
+        {
+            enemyDefinition = db.GetDefinition(grade);
+            if (enemyDefinition != null)
+            {
+                // use data to configure kill impulse
+                // this overrides the older grade-based thresholds
+                killImpulseOverride = enemyDefinition.killImpulse;
+                _killImpulseThreshold = enemyDefinition.killImpulse;
+
+                // apply mass to the main rigidbody
+                if (sourceBody != null)
+                {
+                    sourceBody.mass = enemyDefinition.mass;
+                }
+
+                // OPTIONAL: scale ragdoll body masses proportionally
+                if (rig != null && rig.Bodies.Count > 0 && sourceBody != null)
+                {
+                    float totalBefore = 0f;
+                    foreach (var b in rig.Bodies)
+                        totalBefore += b.mass;
+
+                    if (totalBefore > 0.0001f)
+                    {
+                        float scale = enemyDefinition.mass / totalBefore;
+                        foreach (var b in rig.Bodies)
+                            b.mass *= scale;
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"[RagdollEnemy] No EnemyTypeDefinition found for type {grade} on {name}.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[RagdollEnemy] No EnemyTypeDatabase.Instance found in scene.");
+        }
         ProbeSupportUnderfoot();
     }
 
@@ -179,6 +236,7 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         if (_isDead) return;
 
         _prevVelocity = sourceBody ? sourceBody.linearVelocity : Vector3.zero;
+        float vy = sourceBody ? sourceBody.linearVelocity.y : 0f;
 
         // Ground probe (for support + optional fall arming)
         Vector3 origin = transform.TransformPoint(groundProbeLocalOffset);
@@ -217,7 +275,7 @@ public class RagdollEnemy : MonoBehaviour, IResettable
 
             if (supportMoved || supportSpun || separated)
             {
-                EnterRagdoll(); // not dead
+                EnterRagdoll(); // non-fatal
             }
         }
 
@@ -228,7 +286,6 @@ public class RagdollEnemy : MonoBehaviour, IResettable
             {
                 _ungroundedTimer += Time.fixedDeltaTime;
 
-                float vy = sourceBody ? sourceBody.linearVelocity.y : 0f;
                 bool fallingFast = vy <= -Mathf.Abs(minFallSpeed);
                 bool validFallStart = requireWasGroundedBeforeFalling ? _wasGrounded : true;
 
@@ -245,10 +302,50 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         }
         else
         {
-            // ensure not armed if feature is off
             _fallArmed = false;
             _ungroundedTimer = 0f;
         }
+
+        // Generic fall start / end detection (approximate)
+        UpdateFallState(vy);
+    }
+
+    /// <summary>
+    /// Approximate fall start/end detection using grounded state and vertical velocity.
+    /// </summary>
+    private void UpdateFallState(float vy)
+    {
+        // start fall when: not grounded and moving down at a decent speed
+        float fallStartSpeed = Mathf.Max(0.5f, minFallSpeed * 0.5f);
+        bool fallingNow = !_isGrounded && vy <= -fallStartSpeed;
+
+        if (!_isFalling && fallingNow)
+        {
+            _isFalling = true;
+            onFallStarted?.Invoke();
+        }
+
+        if (_isFalling)
+        {
+            bool landed = _isGrounded;
+            bool slowedDown = Mathf.Abs(vy) < 0.1f;
+            bool killed = _isDead; // death counts as fall end
+
+            if (landed || slowedDown || killed)
+            {
+                EndFallIfNeeded();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Ends the fall state (if active) and fires onFallEnded.
+    /// </summary>
+    private void EndFallIfNeeded()
+    {
+        if (!_isFalling) return;
+        _isFalling = false;
+        onFallEnded?.Invoke();
     }
 
     private void EnterRagdoll()
@@ -293,14 +390,12 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         // Ignore startup noise
         if (_startupTimer > 0f) return;
 
-        // If you explicitly want “any collision kills”, respect it — otherwise use impulse threshold.
         if (killOnAnyCollision)
         {
             Kill();
             return;
         }
 
-        // If fall-death enabled and we were armed, we still require a *hard* landing.
         if (enableFallDeath && _fallArmed)
         {
             float landingSpeed = Mathf.Max(_prevVelocity.magnitude, collision.relativeVelocity.magnitude);
@@ -309,10 +404,9 @@ public class RagdollEnemy : MonoBehaviour, IResettable
                 Kill();
                 return;
             }
-            _fallArmed = false; // touched ground but not hard enough
+            _fallArmed = false;
         }
 
-        // Normal rule: only kill if impact impulse is strong enough.
         float impulseMag = collision.impulse.magnitude;
         if (impulseMag >= _killImpulseThreshold)
         {
@@ -374,7 +468,6 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         var myRb = sourceBody ? sourceBody : GetComponent<Rigidbody>();
         Vector3 relVel = myRb ? (rb.linearVelocity - myRb.linearVelocity) : rb.linearVelocity;
 
-        // Treat trigger “impact” as pseudo impulse: only kill if strong enough.
         float pseudoImpulse = relVel.magnitude * rb.mass;
         if (pseudoImpulse >= _killImpulseThreshold)
         {
@@ -387,6 +480,10 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     public void Kill()
     {
         if (_isDead) return;
+
+        // Death counts as "fall ended" if we were falling
+        EndFallIfNeeded();
+
         _isDead = true;
 
         EnterRagdoll();
@@ -412,6 +509,7 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         _fallArmed = false;
         _ungroundedTimer = 0f;
         _startupTimer = startupGraceTime;
+        _isFalling = false;
 
         _killImpulseThreshold = ComputeKillThreshold();
 
@@ -484,4 +582,3 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         }
     }
 }
-

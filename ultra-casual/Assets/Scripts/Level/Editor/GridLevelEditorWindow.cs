@@ -916,6 +916,10 @@ public class GridLevelEditorWindow : EditorWindow
             {
                 root.AddComponent<ObstacleSet>();
             }
+            if (root.GetComponent<LevelEnemyTracker>() == null)
+            {
+                root.AddComponent<LevelEnemyTracker>();
+            }
 
             root.transform.localScale = Vector3.one * _baseScale;
 

@@ -204,7 +204,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: x100
+  m_text: +20
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: cca1c247a281664478db9d1c19d95fff, type: 2}
   m_sharedMaterial: {fileID: -5816361352116253987, guid: cca1c247a281664478db9d1c19d95fff, type: 2}
@@ -381,7 +381,7 @@ GameObject:
   - component: {fileID: 7163210416888193366}
   - component: {fileID: 2395333470024435168}
   m_Layer: 0
-  m_Name: TargetRoundBase
+  m_Name: Target20
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -468,7 +468,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b0698767834cb54fbc013e4426b4166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  value: 100
+  value: 20
   isMultiplier: 0
   playerTag: Player
   upgradeSystem: {fileID: 0}

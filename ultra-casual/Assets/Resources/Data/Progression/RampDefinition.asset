@@ -17,6 +17,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   color: {r: 0.55962604, g: 0.3254717, b: 1, a: 1}
   worldPrefab: {fileID: 0}
+  showOnUi: 0
   baseCost: 100
   costMultiplier: 1.3
   baseValue: -15

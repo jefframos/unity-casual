@@ -11,6 +11,7 @@ public class UpgradeDefinition : ScriptableObject
     public Sprite icon;
     public Color color = Color.white;
     public GameObject worldPrefab;
+    public bool showOnUi = true;
 
     [Header("Economy")]
     public int baseCost = 100;

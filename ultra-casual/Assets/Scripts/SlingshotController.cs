@@ -65,6 +65,12 @@ public class SlingshotController : MonoBehaviour, IGameController
     private Vector3 _startParentPos;    // where we must reset to if threshold not reached
     private Quaternion _startParentRot; // initial facing
     private Vector3 _startMid;          // mid of anchors at press (for accuracy)
+    [Header("Visual Pull Diagonal")]
+    [Tooltip("If set, defines the max vertical offset from the start position at max pull. Only the Y difference from start is used.")]
+    public Transform verticalOffsetRef;
+
+    [Tooltip("If no transform is provided, this is the max downward offset (in meters) at max pull.")]
+    public float maxDownOffset = 0.5f;
 
     private void OnValidate()
     {
@@ -228,12 +234,52 @@ public class SlingshotController : MonoBehaviour, IGameController
         // --- Real aiming logic (only when threshold met) ---
 
         // Move so mid of anchors sits at pullPoint (smoothed)
+        // if (_target.LeftAnchor && _target.RightAnchor && _target.Parent)
+        // {
+        //     Vector3 currentMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
+        //     Vector3 delta = _pullPoint - currentMid;
+        //     const float lerpSpeed = 0.1f;
+        //     _target.Parent.position = Vector3.Lerp(_target.Parent.position, _target.Parent.position + delta, lerpSpeed);
+        // }
+
         if (_target.LeftAnchor && _target.RightAnchor && _target.Parent)
         {
             Vector3 currentMid = (_target.LeftAnchor.position + _target.RightAnchor.position) * 0.5f;
             Vector3 delta = _pullPoint - currentMid;
+
+            // Base target position (what you already had)
+            Vector3 targetPos = _target.Parent.position + delta;
+
+            // --- NEW: add vertical "down" offset for a diagonal pull (purely visual) ---
+
+            // How far along the back axis we are, normalized [0..1]
+            float back01 = (maxPullDistance > 0f) ? Mathf.Clamp01(clampedBack / maxPullDistance) : 0f;
+
+            // Determine max downward offset
+            float fullDownOffsetY = 0f;
+
+            if (verticalOffsetRef != null)
+            {
+                // Use the vertical difference between the reference and where we started
+                fullDownOffsetY = verticalOffsetRef.position.y - _startParentPos.y;
+                // Typically this will be negative (down); if not, you can force negative:
+                // fullDownOffsetY = -Mathf.Abs(fullDownOffsetY);
+            }
+            else
+            {
+                // Fallback: simple numeric offset (always downward)
+                fullDownOffsetY = -Mathf.Abs(maxDownOffset);
+            }
+
+            // Interpolate from 0 → full down offset based on pull amount
+            float downY = fullDownOffsetY * back01;
+
+            // Apply offset along world Y (if you want "down" along a custom axis, use -view.upAxis instead)
+            targetPos += new Vector3(0f, downY, 0f);
+
+            // Smooth toward the new target position
             const float lerpSpeed = 0.1f;
-            _target.Parent.position = Vector3.Lerp(_target.Parent.position, _target.Parent.position + delta, lerpSpeed);
+            _target.Parent.position = Vector3.Lerp(_target.Parent.position, targetPos, lerpSpeed);
         }
 
         // <<< ADD THIS HERE >>>

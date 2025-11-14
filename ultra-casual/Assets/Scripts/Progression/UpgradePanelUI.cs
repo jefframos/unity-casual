@@ -143,7 +143,7 @@ public class UpgradePanelUI : MonoBehaviour
 
         foreach (var def in defs)
         {
-            if (!def) continue;
+            if (!def || !def.showOnUi) continue;
 
             var card = Instantiate(upgradeCardPrefab, cardsParent);
             card.Setup(upgradeSystem, def, OnCardChanged);

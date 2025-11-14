@@ -37,14 +37,14 @@ public class ExplosiveEffector : MonoBehaviour
         _selfRb = GetComponent<Rigidbody>();
         _spawnTime = Time.time;
     }
+
     void OnEnable()
     {
         _exploded = false;
         _isBusy = false;
         _spawnTime = Time.time;
-        // _armedPending = false;
-        // _hasLastPos = false;
     }
+
     private void Update()
     {
         if (_armedPending && Time.time >= _armedExplodeAt && !_exploded)
@@ -71,7 +71,6 @@ public class ExplosiveEffector : MonoBehaviour
 
     // --------- Contact routing ---------
 
-    //private void OnTriggerEnter(Collider other) => HandleContact(other, null);
     private void OnCollisionEnter(Collision c)
     {
         Vector3? normal = c.contactCount > 0 ? c.GetContact(0).normal : (Vector3?)null;
@@ -89,7 +88,6 @@ public class ExplosiveEffector : MonoBehaviour
         // Player → instant explode.
         if (!string.IsNullOrEmpty(definition.playerTag) && MatchesTagOrParent(other.transform, definition.playerTag))
         {
-            Debug.Log("EXPLODE PLAYER");
             ExplodeNow();
             return;
         }
@@ -116,19 +114,16 @@ public class ExplosiveEffector : MonoBehaviour
         return false;
     }
 
-    /// <summary>Estimate whether the contact came from something moving fast enough.</summary>
     private bool IsMovingImpact(Collider other, Collision collision, float minSpeed)
     {
         float otherSpeed = 0f;
 
-        // Prefer relative velocity from Collision if available
         if (collision != null)
         {
             otherSpeed = collision.relativeVelocity.magnitude;
         }
         else
         {
-            // Trigger path: try the other's rigidbody velocity
             var rb = other.attachedRigidbody;
             if (rb != null)
             {
@@ -136,7 +131,6 @@ public class ExplosiveEffector : MonoBehaviour
             }
             else
             {
-                // If other has no RB but this explosive moves, use self speed
                 otherSpeed = GetSelfSpeedEstimate();
             }
         }
@@ -148,7 +142,6 @@ public class ExplosiveEffector : MonoBehaviour
     {
         if (_selfRb != null) return _selfRb.linearVelocity.magnitude;
 
-        // Fallback: position delta per frame (approx)
         if (_hasLastPos)
         {
             float spd = (transform.position - _lastPos).magnitude / Mathf.Max(Time.deltaTime, 1e-6f);
@@ -191,9 +184,20 @@ public class ExplosiveEffector : MonoBehaviour
         _isBusy = true;
         onExplodeStarted?.Invoke();
 
-        // FX
-        if (definition.vfxPrefab) Instantiate(definition.vfxPrefab, transform.position, Quaternion.identity);
-        if (definition.sfx) AudioSource.PlayClipAtPoint(definition.sfx, transform.position, definition.sfxVolume);
+        // FX (POOL-BASED NOW)
+        if (definition.vfxPrefab != null)
+        {
+            ExplosionVfxPool.Instance?.Play(
+                definition.vfxPrefab,
+                transform.position,
+                Quaternion.identity
+            );
+        }
+
+        if (definition.sfx)
+        {
+            AudioSource.PlayClipAtPoint(definition.sfx, transform.position, definition.sfxVolume);
+        }
 
         // Apply to EVERYTHING with a Rigidbody in radius
         DoExplosionToWorldAndChain();
@@ -209,10 +213,10 @@ public class ExplosiveEffector : MonoBehaviour
             if (definition.destroyAfterSeconds <= 0f) gameObject.SetActive(false);
             else
             {
-                // Start disable timer using UniTask (fire-and-forget)
                 Cysharp.Threading.Tasks.UniTask.Void(async () =>
                 {
-                    await Cysharp.Threading.Tasks.UniTask.Delay(System.TimeSpan.FromSeconds(definition.destroyAfterSeconds));
+                    await Cysharp.Threading.Tasks.UniTask.Delay(
+                        System.TimeSpan.FromSeconds(definition.destroyAfterSeconds));
                     if (this != null) gameObject.SetActive(false);
                 });
             }
@@ -250,7 +254,6 @@ public class ExplosiveEffector : MonoBehaviour
             }
 
             // (B) Apply forces to ANY Rigidbody
-            // First, special-case your player via DelayedRagdollSwitcher if present
             var switcher = h.GetComponentInParent<DelayedRagdollSwitcher>();
             Vector3 toTarget = h.transform.position - transform.position;
             float d = toTarget.magnitude;
@@ -259,24 +262,36 @@ public class ExplosiveEffector : MonoBehaviour
             Vector3 dir = (d > 1e-5f ? toTarget / d : Random.onUnitSphere);
             if (definition.randomAngleJitterDeg > 0f)
             {
-                Quaternion q = Quaternion.AngleAxis(Random.Range(-definition.randomAngleJitterDeg, definition.randomAngleJitterDeg), Random.onUnitSphere);
+                Quaternion q = Quaternion.AngleAxis(
+                    Random.Range(-definition.randomAngleJitterDeg, definition.randomAngleJitterDeg),
+                    Random.onUnitSphere);
                 dir = (q * dir).normalized;
             }
 
             float normalizedDist = Mathf.Clamp01(d / falloffR);
             float forceMag = definition.baseForce * definition.falloff.Evaluate(normalizedDist);
 
+            if (normalizedDist < 0.7f)
+            {
+                var enemy = h.GetComponentInParent<RagdollEnemy>();
+                if (enemy != null)
+                {
+                    enemy.Kill();
+                }
+            }
+
             if (switcher != null)
             {
-                // Use your tailored application path (respects ragdoll modes)
                 bool forceSwitch = definition.forceSwitchToRagdollOnHit;
                 Vector3 worldForce = dir * forceMag;
 
                 switch (definition.applicationTarget)
                 {
                     case ForceApplicationTarget.Auto:
-                        if (switcher.IsLaunching) switcher.ApplyForce(worldForce, definition.forceMode, null, false, false, toLauncher: true);
-                        else switcher.ApplyForce(worldForce, definition.forceMode, null, forceSwitch, false, toLauncher: false);
+                        if (switcher.IsLaunching)
+                            switcher.ApplyForce(worldForce, definition.forceMode, null, false, false, toLauncher: true);
+                        else
+                            switcher.ApplyForce(worldForce, definition.forceMode, null, forceSwitch, false, toLauncher: false);
                         break;
 
                     case ForceApplicationTarget.HipsOnly:
@@ -294,15 +309,17 @@ public class ExplosiveEffector : MonoBehaviour
             }
             else
             {
-                // Generic rigidbodies: affect everything
                 var rb = h.attachedRigidbody ?? h.GetComponentInParent<Rigidbody>();
                 if (rb != null && rb.isKinematic == false)
                 {
                     if (definition.useAddExplosionForce)
                     {
-                        // Emulate radial explosion force
-                        rb.AddExplosionForce(forceMag, transform.position, radius, definition.explosionUpwardsModifier,
-                                             definition.forceMode == ForceMode.Impulse ? ForceMode.Impulse : ForceMode.Force);
+                        rb.AddExplosionForce(
+                            forceMag,
+                            transform.position,
+                            radius,
+                            definition.explosionUpwardsModifier,
+                            definition.forceMode == ForceMode.Impulse ? ForceMode.Impulse : ForceMode.Force);
                     }
                     else
                     {

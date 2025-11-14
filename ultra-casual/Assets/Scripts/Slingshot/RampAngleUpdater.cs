@@ -2,24 +2,51 @@ using UnityEngine;
 
 public class RampAngleUpdater : MonoBehaviour
 {
+    [Header("Ramp Reference")]
     public Transform Ramp;
-    public bool useUpgrade;
-    public float baseAngle;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
 
+    [Header("Upgrade-Based Rotation")]
+    public bool useUpgrade = true;
+    public float baseAngle = 0f;
+
+    private float _uiAngle = 0f;
+
+    private void OnEnable()
+    {
+        if (RampAngleMediator.Instance != null)
+        {
+            RampAngleMediator.Instance.OnAngleChanged += HandleUIAngleChanged;
+            _uiAngle = RampAngleMediator.Instance.AdditionalUIAngle;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnDisable()
     {
+        if (RampAngleMediator.Instance != null)
+        {
+            RampAngleMediator.Instance.OnAngleChanged -= HandleUIAngleChanged;
+        }
+    }
+
+    private void HandleUIAngleChanged(float value)
+    {
+        _uiAngle = value;
+    }
+
+    private void Update()
+    {
+        if (!Ramp) return;
+
+        float totalAngle = baseAngle;
 
         if (useUpgrade)
         {
-            var rampAngle = UpgradeSystem.Instance.GetValue(UpgradeType.RAMP);
-
-            Ramp.rotation = Quaternion.Euler(baseAngle + rampAngle, 0, 0);
+            float upgradeAngle = UpgradeSystem.Instance.GetValue(UpgradeType.RAMP);
+            totalAngle += upgradeAngle;
         }
+
+        totalAngle += _uiAngle;
+
+        Ramp.rotation = Quaternion.Euler(totalAngle, 0f, 0f);
     }
 }

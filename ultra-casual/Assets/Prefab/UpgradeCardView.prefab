@@ -296,6 +296,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5012104683627046197}
   - component: {fileID: 6261984038745212853}
+  - component: {fileID: 7425921401305076672}
   m_Layer: 5
   m_Name: UpgradeCardView
   m_TagString: Untagged
@@ -354,6 +355,26 @@ MonoBehaviour:
   stepsPerLevelForUI: 5
   backgroundImage: {fileID: 5678726724291363964}
   scalePop: {fileID: 2927784944105909518}
+--- !u!114 &7425921401305076672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1772256097622435035}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreLayout: 0
+  m_MinWidth: 165
+  m_MinHeight: -1
+  m_PreferredWidth: -1
+  m_PreferredHeight: -1
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
 --- !u!1 &1812557167517718523
 GameObject:
   m_ObjectHideFlags: 0

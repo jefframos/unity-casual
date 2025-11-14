@@ -102,13 +102,17 @@ public class IconSnapshotter : MonoBehaviour
                 t.localRotation = Quaternion.Euler(localEulerForCapture);
             }
 
-            // Compute bounds in world space
+            // Compute bounds in world space (Renderer.bounds already includes all nested scale)
             if (!TryGetWorldBounds(t, out Bounds worldBounds))
             {
                 Debug.LogWarning($"[IconSnapshotter] No renderers found under {t.name}. Skipping.");
                 if (overrideLocalRotation) t.localRotation = originalLocalRot;
                 continue;
             }
+
+            // *** IMPORTANT ***
+            // We NO LONGER rescale worldBounds by t.lossyScale here.
+            // That was causing objects to appear huge/tiny unless scale was (1,1,1).
 
             // Optionally isolate layer
             Dictionary<Transform, int> originalLayers = null;
@@ -181,9 +185,10 @@ public class IconSnapshotter : MonoBehaviour
         foreach (var r in renderers)
         {
             if (r is TrailRenderer) continue; // usually not desired in icons
+
             if (!hasAny)
             {
-                bounds = r.bounds;
+                bounds = r.bounds; // world-space AABB, already scaled
                 hasAny = true;
             }
             else
@@ -191,6 +196,7 @@ public class IconSnapshotter : MonoBehaviour
                 bounds.Encapsulate(r.bounds);
             }
         }
+
         return hasAny;
     }
 

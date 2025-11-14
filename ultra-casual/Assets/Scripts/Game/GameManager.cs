@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Threading.Tasks;
-using UnityEngine.Rendering;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,13 +15,15 @@ public class GameManager : MonoBehaviour
     [Header("UI")]
     public SlingshotCinemachineBridge cameraBridge;
     public GameUiHandler uiHandler;
-    public UiMode startMode = UiMode.MainMenu; // optional: initial state at play
-    public LevelManager levelManager; // optional: initial state at play
+    public UiMode startMode = UiMode.MainMenu;
+    public LevelManager levelManager;
 
     private IGameController _gameController;
 
     // Cancellation for the active restart flow
     private CancellationTokenSource _restartCts;
+
+    private bool nextIsHighscore = false;
 
     private void Start()
     {
@@ -33,6 +34,7 @@ public class GameManager : MonoBehaviour
             uiHandler.SetMode(startMode);
         }
 
+        StartGame();
     }
 
     private void OnDisable()
@@ -40,6 +42,12 @@ public class GameManager : MonoBehaviour
         _restartCts?.Cancel();
         _restartCts?.Dispose();
         _restartCts = null;
+
+        if (_gameController != null)
+        {
+            _gameController.OnEnterGameMode -= OnEnterGameMode;
+            _gameController.OnReleaseStarted -= OnReleaseStarted;
+        }
     }
 
     private void CacheGameController()
@@ -77,15 +85,19 @@ public class GameManager : MonoBehaviour
         if (_gameController == null)
         {
             Debug.LogWarning("[GameManager] No IGameController found. Will still reset IResettable objects.");
+            return;
         }
 
         _gameController.OnEnterGameMode += OnEnterGameMode;
         _gameController.OnReleaseStarted += OnReleaseStarted;
     }
 
+    // --------------------------------------------------
+    // Game flow hooks
+    // --------------------------------------------------
+
     public void OnReleaseStarted(Transform launcher)
     {
-        // Switch UI to gameplay HUD
         if (uiHandler != null)
         {
             uiHandler.SetMode(UiMode.InGame);
@@ -93,10 +105,9 @@ public class GameManager : MonoBehaviour
 
         PokiBridge.GameplayStart();
     }
-    /// <summary>Build the list of scene objects that implement IResettable.</summary>
+
     public void OnEnterGameMode(Transform launcher)
     {
-        // Switch UI to gameplay HUD
         if (uiHandler != null)
         {
             uiHandler.SetMode(UiMode.PreGame);
@@ -108,22 +119,21 @@ public class GameManager : MonoBehaviour
     {
         cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.PreGame);
         _gameController?.ResetGameState();
+
         ResetAll();
+        EnemyFallCoordinator.Instance?.ResetCoordinator();
 
-
+        // Tell mediator to refresh its view of the world & UI
+        LevelTrackerMediator.Instance.RefreshLevels();
     }
 
     /// <summary>End the current run.</summary>
     public void EndGame()
     {
         _gameController?.EndGame();
-
         PokiBridge.GameplayStop();
-
-
     }
 
-    private bool nextIsHighscore = false;
     public void NewHighscore(float final)
     {
         nextIsHighscore = true;
@@ -134,38 +144,40 @@ public class GameManager : MonoBehaviour
         _ = RestartGame((int)final);
     }
 
-
     /// <summary>Show final score, then reset and restart gameplay (UniTask flow).</summary>
     public async Task RestartGame(int final)
     {
+        await UniTask.WaitForSeconds(1f);
 
-        // Wait for all chain reactions to finish before ending the level
         if (ExplosionCoordinator.Instance != null)
         {
             await ExplosionCoordinator.Instance.WaitForAllExplosionsAsync();
         }
 
+        if (EnemyFallCoordinator.Instance != null)
+        {
+            await EnemyFallCoordinator.Instance.WaitForEnemiesToSettleAsync();
+        }
 
         _restartCts?.Cancel();
         _restartCts?.Dispose();
         _restartCts = new CancellationTokenSource();
 
-
         if (uiHandler != null)
         {
-            uiHandler.SetMode(UiMode.GameOver); // or UiMode.GameOver / Results
+            uiHandler.SetMode(UiMode.GameOver);
         }
+
         await RestartRoutineAsync(final, _restartCts.Token);
 
-
-        if (nextIsHighscore)
+        if (nextIsHighscore && uiHandler != null)
         {
             uiHandler.SetNewHighscore(final);
         }
-        // Swap UI to out-of-game or results/menu as you prefer
+
         if (uiHandler != null)
         {
-            uiHandler.SetMode(UiMode.OutGame); // or UiMode.GameOver / Results
+            uiHandler.SetMode(UiMode.OutGame);
         }
 
         nextIsHighscore = false;
@@ -175,37 +187,35 @@ public class GameManager : MonoBehaviour
     {
         try
         {
-            // 1) End current run (optional)
             EndGame();
 
-            // 2) Show result/score while in OutGame/Results UI
             var endGameOrchestrator = FindObjectsByType<EndGameOrchestrator>(FindObjectsSortMode.None)
                 .FirstOrDefault();
 
-
             if (endGameOrchestrator != null)
             {
-                await endGameOrchestrator.OrchestrateEnd(runScoreDelta: 10, startScoreValue: final, nextIsHighscore);
-
-
+                await endGameOrchestrator.OrchestrateEnd(
+                    runScoreDelta: 10,
+                    startScoreValue: final,
+                    nextIsHighscore
+                );
             }
             else
             {
                 Debug.LogWarning("[GameManager] No IFinalScorePresenter found. Restarting quickly.");
-                await UniTask.Delay(TimeSpan.FromSeconds(0.25),
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(0.25),
                     DelayType.UnscaledDeltaTime,
                     PlayerLoopTiming.Update,
-                    token);
+                    token
+                );
             }
 
-
-
-            // 3) Start new run + switch UI back to InGame
             StartGame();
         }
         catch (OperationCanceledException)
         {
-            // Swallow if we canceled due to disable/restart spam
+            // expected
         }
         catch (Exception ex)
         {
@@ -215,7 +225,7 @@ public class GameManager : MonoBehaviour
 
     private void ResetAll()
     {
-        levelManager.ResetAll();
+        levelManager?.ResetAll();
     }
 
     // Quick keyboard test

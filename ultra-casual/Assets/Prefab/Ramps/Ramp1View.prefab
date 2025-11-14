@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8105781000065246810
 Transform:
   m_ObjectHideFlags: 0
@@ -202,7 +202,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 64aae40da608b914bbd3b89d2ac0ae2c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 137ac8fb2e1c3044faa111d7522537ee, type: 2}
+      objectReference: {fileID: 2100000, guid: 58dac2d71760e4c40b17f00375aaeff5, type: 2}
     - target: {fileID: 919132149155446097, guid: 64aae40da608b914bbd3b89d2ac0ae2c, type: 3}
       propertyPath: m_Name
       value: Ramp

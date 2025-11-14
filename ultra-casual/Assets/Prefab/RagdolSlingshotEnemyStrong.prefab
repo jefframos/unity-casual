@@ -71,8 +71,30 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: a1845977fba8a7a4aa1163544f9b72cc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4113030593570774570}
   m_SourcePrefab: {fileID: 100100000, guid: a1845977fba8a7a4aa1163544f9b72cc, type: 3}
+--- !u!1 &1402093270440373931 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: a1845977fba8a7a4aa1163544f9b72cc, type: 3}
+  m_PrefabInstance: {fileID: 2284545157508191226}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4113030593570774570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1402093270440373931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c40206d66a77cf94ea1692d5bf7e5883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  extraExtents: {x: 2, y: 10, z: 2}
+  deriveFromShader: 1
 --- !u!4 &1747094057863099409 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a1845977fba8a7a4aa1163544f9b72cc, type: 3}
@@ -302,11 +324,17 @@ MonoBehaviour:
   minFallSpeed: 0.5
   fallGraceTime: 0.12
   requireWasGroundedBeforeFalling: 0
-  fallImpactSpeedThreshold: 5
+  fallImpactSpeedThreshold: 2
   supportMoveSpeedThreshold: 3
   supportAngularSpeedDegThreshold: 90
   supportSeparationDistance: 0.3
   onDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  onFallStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onFallEnded:
     m_PersistentCalls:
       m_Calls: []
 --- !u!136 &3367721502876568681

@@ -104,7 +104,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b0698767834cb54fbc013e4426b4166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  value: 50
+  value: 10
   isMultiplier: 1
   playerTag: Player
   upgradeSystem: {fileID: 0}
@@ -289,7 +289,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: x50
+  m_text: x10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: cca1c247a281664478db9d1c19d95fff, type: 2}
   m_sharedMaterial: {fileID: -5816361352116253987, guid: cca1c247a281664478db9d1c19d95fff, type: 2}

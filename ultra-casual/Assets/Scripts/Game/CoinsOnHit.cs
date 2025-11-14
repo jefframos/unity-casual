@@ -37,7 +37,7 @@ public class CoinsOnHit : MonoBehaviour, IResettable
             }
             else
             {
-                targetTMP.text = "x" + ((int)value).ToString();
+                targetTMP.text = "+" + ((int)value).ToString();
             }
         }
     }

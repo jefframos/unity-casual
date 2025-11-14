@@ -103,7 +103,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b0698767834cb54fbc013e4426b4166, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  value: 100
+  value: 1.5
   isMultiplier: 1
   playerTag: Player
   upgradeSystem: {fileID: 0}
