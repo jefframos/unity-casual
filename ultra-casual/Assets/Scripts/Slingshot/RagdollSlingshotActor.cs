@@ -575,6 +575,8 @@ public class DelayedRagdollSwitcher : MonoBehaviour, ISlingshotable, IResettable
         if (launcherBody != null)
         {
             launcherBody.useGravity = false;
+            launcherBody.isKinematic = false;
+
             launcherBody.linearVelocity = Vector3.zero;
             launcherBody.angularVelocity = Vector3.zero;
             launcherBody.isKinematic = true;

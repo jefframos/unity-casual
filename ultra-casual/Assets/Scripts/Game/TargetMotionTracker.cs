@@ -5,7 +5,9 @@ using UnityEngine;
 public class TargetMotionTracker : MonoBehaviour
 {
     [Header("Bindings")]
-    public SlingshotController controller; // assign in inspector (or Find in Awake)
+
+    public MonoBehaviour slingshotComponent;
+    private IGameController controller;
     public Transform trackedTransform;     // will be set from controller's LaunchStarted
     public Rigidbody trackedBody;          // optional but recommended (for velocity-based stop)
     public bool ignoreYAxis = false;       // distance in XZ only
@@ -35,10 +37,7 @@ public class TargetMotionTracker : MonoBehaviour
 
     private void Awake()
     {
-        if (!controller)
-        {
-            controller = FindAnyObjectByType<SlingshotController>();
-        }
+        controller = slingshotComponent as IGameController;
     }
 
     private void OnEnable()

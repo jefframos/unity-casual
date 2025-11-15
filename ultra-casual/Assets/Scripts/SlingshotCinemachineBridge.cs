@@ -41,7 +41,8 @@ public class SlingshotCinemachineBridge : MonoBehaviour
     public Transform customLookAt;
 
     [Header("Optional Slingshot Hook")]
-    public SlingshotController slingshot;
+    public MonoBehaviour slingshotComponent;
+    private IGameController slingshot;
 
     // ---------- State ----------
     //public GameCameraMode CurrentMode { get; private set; } = GameCameraMode.OutGame;
@@ -55,6 +56,7 @@ public class SlingshotCinemachineBridge : MonoBehaviour
     }
     private void Awake()
     {
+        slingshot = slingshotComponent as IGameController;
         // Build lookup dictionary from editor list
         _camLookup.Clear();
         foreach (var entry in cameraTable)
