@@ -15,7 +15,7 @@ public class LevelEnemyTracker : MonoBehaviour
     // Static debug toggle
     // --------------------------------------------------------------------
 
-    public static bool DebugLogsEnabled = true;
+    public static bool DebugLogsEnabled = false;
 
     private void Log(string message)
     {

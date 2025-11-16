@@ -87,7 +87,7 @@ public class LevelManager : MonoBehaviour
     /// - If this call started a new step (either first step or a later one),
     ///   it must call the async LevelStepStarted() with all enemies of that step.
     /// </summary>
-    internal void StartLevel()
+    internal async Task StartLevel(SlingshotCinemachineBridge cameraBridge, GameUiHandler uiHandler)
     {
         EnemyFallCoordinator.Instance?.ResetCoordinator();
 
@@ -122,9 +122,12 @@ public class LevelManager : MonoBehaviour
 
         if (count > 0)
         {
+
+            cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.EnemyReveal);
+            uiHandler.SetMode(UiMode.EnemyReveal);
             // We actually started a step on this frame.
             // Fire-and-forget the async intro of this step.
-            _ = LevelStepStarted(stepEnemies);
+            await LevelStepStarted(stepEnemies);
         }
     }
 
@@ -244,7 +247,6 @@ public class LevelManager : MonoBehaviour
 
 
         FindEnemyAppear();
-        Debug.LogWarning("FIX THIS APPEARING ORCHESTRATOR");
         // This token is cancelled when LevelManager is destroyed.
         CancellationToken token = this.GetCancellationTokenOnDestroy();
 

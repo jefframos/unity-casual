@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-
+using DG.Tweening;
 [DisallowMultipleComponent]
 public class EnemyAppearingOrchestrator : MonoBehaviour
 {
@@ -17,6 +17,9 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
     [Header("Activation")]
     [Tooltip("If true, enemies that are disabled will be SetActive(true) when they appear.")]
     public bool activateInactiveGameObjects = true;
+    public GameObject vfxPrefab;
+    public AudioClip sfx;
+    public float sfxVolume;
 
     /// <summary>
     /// Called by LevelManager when a new level step starts.
@@ -28,6 +31,17 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
         {
             return;
         }
+
+        foreach (var item in enemies)
+        {
+            if (item != null)
+            {
+                item.SetActive(false);
+            }
+        }
+
+        const float popDuration = 0.25f;   // tweak as you like
+        const float popOvershoot = 1.1f;   // slight overshoot for a nicer pop
 
         try
         {
@@ -52,13 +66,64 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
                     continue;
                 }
 
-                // Basic activation
-                if (activateInactiveGameObjects && !enemy.activeSelf)
+                // VFX/SFX
+                if (vfxPrefab != null)
                 {
-                    enemy.SetActive(false);
+                    ExplosionVfxPool.Instance?.Play(
+                        vfxPrefab,
+                        enemy.transform.position,
+                        Quaternion.identity
+                    );
                 }
 
-                // TODO: Plug in per-enemy appear effects here (tween, VFX, etc.)
+                if (sfx)
+                {
+                    AudioSource.PlayClipAtPoint(sfx, transform.position, sfxVolume);
+                }
+
+                SlingshotCinemachineBridge.Instance.SetCameraMode(
+                    SlingshotCinemachineBridge.GameCameraMode.EnemyReveal,
+                    enemy.transform,
+                    enemy.transform
+                );
+
+                RagdollEnemy ragdoll = enemy.GetComponent<RagdollEnemy>();
+
+                Rigidbody sourceBody = null;
+                bool prevIsKinematic = false;
+
+                if (ragdoll != null && ragdoll.sourceBody != null)
+                {
+                    sourceBody = ragdoll.sourceBody;
+                    prevIsKinematic = sourceBody.isKinematic;
+
+                    // Disable physics so it doesn't collide/push environment during pop
+                    sourceBody.isKinematic = true;
+                    // If you're using Rigidbody2D or something custom, adapt this line accordingly.
+                }
+
+                // ----- POP SCALE USING DOTWEEN -----
+                // Start from zero scale (invisible), then pop to normal size.
+                enemy.SetActive(true);
+                enemy.transform.localScale = Vector3.zero;
+
+                // Option A: basic pop, 0 -> 1
+                // await enemy.transform
+                //     .DOScale(Vector3.one, popDuration)
+                //     .SetEase(Ease.OutBack)
+                //     .ToUniTask(cancellationToken: token);
+
+                // Option B: cartoony overshoot pop (0 -> 1.1 -> 1)
+                await enemy.transform
+                    .DOScale(Vector3.one, popDuration)
+                    .SetEase(Ease.OutBack).AsyncWaitForCompletion();
+                // .OnComplete(() =>
+                // {
+                //     // settle back to normal size
+                //     enemy.transform.DOScale(Vector3.one, popDuration * 0.4f)
+                //         .SetEase(Ease.InOutSine);
+                // }).AsyncWaitForCompletion();     //          (cancellationToken: token);
+                // -----------------------------------
 
                 if (delayBetweenEnemies > 0f && i < enemies.Count - 1)
                 {
@@ -66,11 +131,18 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
                         TimeSpan.FromSeconds(delayBetweenEnemies),
                         cancellationToken: token
                     );
+                }
 
-                    enemy.SetActive(true);
-
+                if (sourceBody != null)
+                {
+                    sourceBody.isKinematic = prevIsKinematic;
                 }
             }
+
+            await UniTask.Delay(
+                       TimeSpan.FromSeconds(popDuration),
+                       cancellationToken: token
+                   );
         }
         catch (OperationCanceledException)
         {

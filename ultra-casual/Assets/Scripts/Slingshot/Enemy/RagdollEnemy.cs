@@ -103,6 +103,7 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     void OnEnable()
     {
         //Debug.LogWarning("OnEnable" + gameObject.name, gameObject);
+        _startupTimer = startupGraceTime;
     }
 
     void OnDisable()
@@ -242,7 +243,7 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     void FixedUpdate()
     {
         if (_startupTimer > 0f) _startupTimer -= Time.fixedDeltaTime;
-        if (_isDead) return;
+        if (_isDead || _startupTimer > 0f) return;
 
         _prevVelocity = sourceBody ? sourceBody.linearVelocity : Vector3.zero;
         float vy = sourceBody ? sourceBody.linearVelocity.y : 0f;

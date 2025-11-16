@@ -102,6 +102,8 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
     private Vector3 _startParentPos;
     private Quaternion _startParentRot;
 
+    private bool enableInput = true;
+
     private void OnValidate()
     {
         if (maxPullDistance < 0f) maxPullDistance = 0f;
@@ -142,7 +144,7 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
 
     private void Update()
     {
-        if (_target == null || view == null) return;
+        if (_target == null || view == null || !enableInput) return;
         if (_target.IsLaunching) return;
 
         HandleInput();
@@ -152,6 +154,10 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
         }
     }
 
+    public void EnableInput()
+    {
+        enableInput = true;
+    }
     private void HandleInput()
     {
         // Pointer down
@@ -446,6 +452,8 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
         OnLaunchStarted?.Invoke(followT);
 
         ClearPreview();
+
+        enableInput = false;
     }
 
     private void CancelShot()

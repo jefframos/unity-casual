@@ -6,13 +6,16 @@ using Unity.Cinemachine;
 [DisallowMultipleComponent]
 public class SlingshotCinemachineBridge : MonoBehaviour
 {
+
+    public static SlingshotCinemachineBridge Instance { get; private set; }
     // ---------- Enums ----------
     public enum GameCameraMode
     {
         OutGame,
         PreGame,
         InGame,
-        EndGame
+        EndGame,
+        EnemyReveal,
     }
 
     [Serializable]
@@ -56,6 +59,16 @@ public class SlingshotCinemachineBridge : MonoBehaviour
     }
     private void Awake()
     {
+
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
         slingshot = slingshotComponent as IGameController;
         // Build lookup dictionary from editor list
         _camLookup.Clear();

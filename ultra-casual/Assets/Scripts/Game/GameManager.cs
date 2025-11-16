@@ -25,16 +25,21 @@ public class GameManager : MonoBehaviour
 
     private bool nextIsHighscore = false;
 
-    private void Start()
+    void Start()
+    {
+        _ = StartAsync();
+    }
+    private async Task StartAsync()
     {
         CacheGameController();
 
+        await StartGame();
         if (uiHandler != null)
         {
             uiHandler.SetMode(startMode);
         }
 
-        StartGame();
+
     }
 
     private void OnDisable()
@@ -115,14 +120,16 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>Start a new run: reset everything and ask the controller to prep gameplay.</summary>
-    public void StartGame()
+    public async Task StartGame()
     {
-        cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.PreGame);
-        _gameController?.ResetGameState();
+        _gameController.ResetGameState();
 
         //ResetAll();
         levelManager?.ResetAll();
-        levelManager.StartLevel();
+        await levelManager.StartLevel(cameraBridge, uiHandler);
+
+        cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.PreGame);
+        _gameController.EnableInput();
 
     }
 
@@ -211,7 +218,7 @@ public class GameManager : MonoBehaviour
                 );
             }
 
-            StartGame();
+            await StartGame();
         }
         catch (OperationCanceledException)
         {

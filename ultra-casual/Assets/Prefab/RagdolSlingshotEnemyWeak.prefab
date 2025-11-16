@@ -208,7 +208,7 @@ MonoBehaviour:
   killImpulseOverride: -1
   killOnAnyCollision: 0
   killOnAnyTrigger: 0
-  startupGraceTime: 0.2
+  startupGraceTime: 1.5
   ownKillTrigger: {fileID: 0}
   groundMask:
     serializedVersion: 2

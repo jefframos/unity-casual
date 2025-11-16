@@ -12,6 +12,7 @@ public interface IGameController
     /// Handle end-of-run logic (score tally, UI, disable input, etc.).
     /// </summary>
     void EndGame();
+    void EnableInput();
 
     /// <summary>
     /// Fired when the launch (shot) starts — passes the follow target.

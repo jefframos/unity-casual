@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: EnemyStandard
   m_EditorClassIdentifier: 
   type: 1
-  color: {r: 0.38087296, g: 0.050943315, b: 1, a: 1}
+  color: {r: 1, g: 0.62305087, b: 0.05098039, a: 1}
   icon: {fileID: 21300000, guid: 735e036c696fe5541a2661083e05dc95, type: 3}
-  value: 100
+  value: 50
   killImpulse: 60
-  mass: 20
+  mass: 130

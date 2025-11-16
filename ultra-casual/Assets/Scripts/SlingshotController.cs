@@ -569,4 +569,9 @@ public class SlingshotController : MonoBehaviour, IGameController
         var t = _target != null ? (_target.FollowTarget ? _target.FollowTarget : _target.Parent) : null;
         OnEnterEndMode?.Invoke(t);
     }
+
+    public void EnableInput()
+    {
+        throw new NotImplementedException();
+    }
 }

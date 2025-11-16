@@ -106,6 +106,10 @@ public class RagdollRig : MonoBehaviour
 
     public void SetKinematic(bool value)
     {
+        if (!value)
+        {
+            Debug.Log(gameObject);
+        }
         foreach (var b in _bodies)
         {
             b.isKinematic = value;
