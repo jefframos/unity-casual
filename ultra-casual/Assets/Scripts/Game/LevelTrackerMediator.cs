@@ -3,60 +3,70 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Tracks enemies per level and exposes stats via events.
-/// No UI references; UI listens to this and does its own thing.
+/// Mediator that bridges LevelEnemyTracker(s) and UI / game flow.
+/// - Finds trackers in the scene.
+/// - Chooses one as the "current" level tracker.
+/// - Lets you refresh, get a snapshot, and start/resume/advance steps.
+/// UI should listen to events from this mediator instead of talking
+/// directly to the trackers.
 /// </summary>
 public class LevelTrackerMediator : MonoBehaviour
 {
     public static LevelTrackerMediator Instance { get; private set; }
 
-    // Snapshot struct the UI can consume
-    public struct EnemyStatsSnapshot
-    {
-        public EnemyGrade grade;
-        public int total;
-        public int dead;
-
-        public EnemyStatsSnapshot(EnemyGrade grade, int total, int dead)
-        {
-            this.grade = grade;
-            this.total = total;
-            this.dead = dead;
-        }
-    }
-
-    /// <summary>
-    /// Fired after RefreshLevels() completes, with a full snapshot of all grades.
-    /// UI should typically rebuild itself on this.
-    /// </summary>
-    public event Action<List<EnemyStatsSnapshot>> OnStatsRebuilt;
-
-    /// <summary>
-    /// Fired whenever a single enemy-grade's stats change (e.g., enemy registered or died).
-    /// </summary>
-    public event Action<EnemyGrade, int, int> OnEnemyStatsChanged;
-
-    // All level trackers for current session
-    private readonly List<LevelEnemyTracker> _trackers = new();
-
-    // Internal stats
-    private readonly Dictionary<EnemyGrade, EnemyStats> _stats = new();
-
-    // NEW: per-refresh death counter (only counts deaths that happened AFTER the last RefreshLevels call)
-    private readonly Dictionary<EnemyGrade, int> _deathCountsSinceRefresh = new();
-
-    /// <summary>
-    /// Read-only view of death counts since last RefreshLevels().
-    /// </summary>
-    public IReadOnlyDictionary<EnemyGrade, int> DeathCountsSinceRefresh => _deathCountsSinceRefresh;
-
+    [Header("Refresh Behaviour")]
+    [Tooltip("If false, trackers will NOT call Reset() when RefreshLevels() is invoked.")]
     public bool persistentLevels = false;
 
-    private struct EnemyStats
+    [Tooltip("Optional: if true, mediator will automatically push a snapshot when something changes.")]
+    public bool autoBroadcastSnapshot = true;
+
+    /// <summary>
+    /// Snapshot type mirrored from LevelEnemyTracker.
+    /// (Alias to avoid typing full nested name everywhere.)
+    /// </summary>
+    public class LevelSnapshot : LevelEnemyTracker.LevelSnapshot { }
+
+    /// <summary>
+    /// Fired whenever we rebuild trackers (RefreshLevels).
+    /// Useful if UI wants to know that a new level was found / selected.
+    /// </summary>
+    public event Action OnTrackersRefreshed;
+
+    /// <summary>
+    /// Fired whenever the mediator pushes a new snapshot.
+    /// Includes per-grade totals, total killed so far,
+    /// what grades exist, and whether it CAN progress to next step.
+    /// </summary>
+    public event Action<LevelEnemyTracker.LevelSnapshot> OnSnapshotUpdated;
+
+    /// <summary>
+    /// Fired when TryAdvanceStep() successfully moves to the next step.
+    /// Provides the new snapshot after advancing.
+    /// </summary>
+    public event Action<LevelEnemyTracker.LevelSnapshot> OnAdvancedStep;
+
+    // All level trackers currently known
+    private readonly List<LevelEnemyTracker> _trackers = new List<LevelEnemyTracker>();
+
+    // The "active" tracker this mediator drives.
+    [SerializeField]
+    private LevelEnemyTracker _currentTracker;
+
+    // Cache of last snapshot for polling-style use.
+    private LevelEnemyTracker.LevelSnapshot _lastSnapshot;
+
+    /// <summary>
+    /// Public read-only access to the current tracker.
+    /// </summary>
+    public LevelEnemyTracker CurrentTracker
     {
-        public int total;
-        public int dead;
+        get { return _currentTracker; }
     }
+
+    // --------------------------------------------------
+    // Singleton setup
+    // --------------------------------------------------
 
     private void Awake()
     {
@@ -67,35 +77,92 @@ public class LevelTrackerMediator : MonoBehaviour
         }
 
         Instance = this;
-        // Optional:
+        // If you want this to survive scene loads:
         // DontDestroyOnLoad(gameObject);
     }
 
     private void OnDisable()
     {
         UnhookAllTrackers();
-        _stats.Clear();
-        _deathCountsSinceRefresh.Clear();
+        _trackers.Clear();
+        _currentTracker = null;
+        _lastSnapshot = null;
+    }
+
+    // --------------------------------------------------
+    // Public API
+    // --------------------------------------------------
+
+    /// <summary>
+    /// Starts or resumes the current level according to the tracker state.
+    /// Flow:
+    /// - If there is no current tracker, returns an empty list.
+    /// - If the current tracker has not started any step yet, it will
+    ///   call StartLevelStepsAndGetNewEnemies() (fresh start).
+    /// - If the current tracker has an active step:
+    ///     * If that grade is cleared, it will advance to the next step
+    ///       and return the GameObjects of newly activated enemies.
+    ///     * If it cannot advance, it will re-show the current step's
+    ///       alive enemies and return an empty list.
+    /// After calling into the tracker, this will broadcast a snapshot
+    /// if autoBroadcastSnapshot is true.
+    /// </summary>
+    public List<GameObject> StartOrResumeLevel()
+    {
+        var result = new List<GameObject>();
+
+        if (_currentTracker == null)
+        {
+            return result;
+        }
+
+        if (_currentTracker.HasActiveStep)
+        {
+            _currentTracker.HideAllEnemies();
+            result = _currentTracker.ResumeLevelAndTryAdvance();
+        }
+        else
+        {
+            _currentTracker.HideAllEnemies();
+            result = _currentTracker.StartLevelStepsAndGetNewEnemies();
+        }
+
+        if (autoBroadcastSnapshot)
+        {
+            BroadcastSnapshot();
+        }
+
+        return result ?? new List<GameObject>();
     }
 
     /// <summary>
     /// Called by GameManager when a new level/run is starting.
-    /// Finds all LevelEnemyTracker, hooks events, rebuilds stats and notifies UI.
-    /// Also resets the per-refresh death counter.
+    /// - Unhooks previous trackers.
+    /// - Finds all LevelEnemyTracker in the scene.
+    /// - Optionally calls Reset() on each (if !persistentLevels).
+    /// - Selects one tracker as current (first by default).
+    /// - Hooks events from trackers.
+    /// - Broadcasts initial snapshot (no steps started yet).
     /// </summary>
     public void RefreshLevels()
     {
         UnhookAllTrackers();
-        _stats.Clear();
+        _trackers.Clear();
+        _currentTracker = null;
+        _lastSnapshot = null;
 
-        // RESET death counter each time we refresh levels
-        _deathCountsSinceRefresh.Clear();
+        var trackers = FindObjectsByType<LevelEnemyTracker>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
 
-        // Find all trackers in the scene
-        var trackers = FindObjectsByType<LevelEnemyTracker>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var tracker in trackers)
         {
-            if (tracker == null) continue;
+            if (tracker == null)
+            {
+                continue;
+            }
+
             _trackers.Add(tracker);
 
             if (!persistentLevels)
@@ -103,120 +170,220 @@ public class LevelTrackerMediator : MonoBehaviour
                 tracker.Reset();
             }
 
+            // Hook events
             tracker.onEnemyRegistered.AddListener(OnEnemyRegistered);
             tracker.onEnemyDied.AddListener(OnEnemyDied);
+            tracker.onEnemyCountsChanged.AddListener(OnCountsChanged);
+            tracker.onStepStarted.AddListener(OnStepStarted);
+            tracker.onAllStepsCompleted.AddListener(OnAllStepsCompleted);
+        }
 
-            // Initialize stats from tracker's current enemies
-            foreach (var enemy in tracker.enemies)
+        // Pick a current tracker (you can later extend this to choose by some id)
+        if (_trackers.Count > 0)
+        {
+            _currentTracker = _trackers[0];
+
+            // IMPORTANT: do NOT start steps here.
+            // We want LevelManager.StartLevel() to control when the first step begins.
+
+            if (autoBroadcastSnapshot)
             {
-                if (enemy == null) continue;
-                bool isDead = tracker.IsEnemyDead(enemy);
-                AddEnemyToStats(enemy, isDead);
+                BroadcastSnapshot();
             }
         }
 
-        // Emit full snapshot so UI can rebuild itself
-        RaiseStatsRebuilt();
+        if (OnTrackersRefreshed != null)
+        {
+            OnTrackersRefreshed.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Returns the current level snapshot (a copy) from the active tracker.
+    /// If no tracker is active, returns null.
+    /// </summary>
+    public LevelEnemyTracker.LevelSnapshot GetSnapshot()
+    {
+        if (_currentTracker == null)
+        {
+            return null;
+        }
+
+        _lastSnapshot = _currentTracker.GetSnapshot();
+        return _lastSnapshot;
+    }
+
+    /// <summary>
+    /// Simple manual "advance" useful for buttons. If you want
+    /// the list of enemies, use StartOrResumeLevel instead.
+    /// </summary>
+    public bool TryAdvanceStep()
+    {
+        if (_currentTracker == null)
+        {
+            return false;
+        }
+
+        bool advanced = _currentTracker.AdvanceToNextStep();
+        if (!advanced)
+        {
+            return false;
+        }
+
+        _lastSnapshot = _currentTracker.GetSnapshot();
+
+        if (autoBroadcastSnapshot && OnSnapshotUpdated != null)
+        {
+            OnSnapshotUpdated.Invoke(_lastSnapshot);
+        }
+
+        if (OnAdvancedStep != null)
+        {
+            OnAdvancedStep.Invoke(_lastSnapshot);
+        }
+
+        return true;
+    }
+
+    [ContextMenu("Force Broadcast Snapshot")]
+    public void ForceBroadcastSnapshot()
+    {
+        BroadcastSnapshot();
     }
 
     // --------------------------------------------------
-    // Internal: trackers & events
+    // Tracker selection
+    // --------------------------------------------------
+
+    public void SetCurrentTracker(LevelEnemyTracker tracker)
+    {
+        if (tracker == null)
+        {
+            _currentTracker = null;
+            _lastSnapshot = null;
+            return;
+        }
+
+        if (!_trackers.Contains(tracker))
+        {
+            _trackers.Add(tracker);
+            tracker.onEnemyRegistered.AddListener(OnEnemyRegistered);
+            tracker.onEnemyDied.AddListener(OnEnemyDied);
+            tracker.onEnemyCountsChanged.AddListener(OnCountsChanged);
+            tracker.onStepStarted.AddListener(OnStepStarted);
+            tracker.onAllStepsCompleted.AddListener(OnAllStepsCompleted);
+        }
+
+        _currentTracker = tracker;
+
+        if (autoBroadcastSnapshot)
+        {
+            BroadcastSnapshot();
+        }
+    }
+
+    // --------------------------------------------------
+    // Events from trackers
     // --------------------------------------------------
 
     private void UnhookAllTrackers()
     {
         foreach (var tracker in _trackers)
         {
-            if (tracker == null) continue;
+            if (tracker == null)
+            {
+                continue;
+            }
+
             tracker.onEnemyRegistered.RemoveListener(OnEnemyRegistered);
             tracker.onEnemyDied.RemoveListener(OnEnemyDied);
+            tracker.onEnemyCountsChanged.RemoveListener(OnCountsChanged);
+            tracker.onStepStarted.RemoveListener(OnStepStarted);
+            tracker.onAllStepsCompleted.RemoveListener(OnAllStepsCompleted);
         }
-        _trackers.Clear();
     }
 
     private void OnEnemyRegistered(RagdollEnemy enemy)
     {
-        if (enemy == null) return;
+        if (!autoBroadcastSnapshot || enemy == null)
+        {
+            return;
+        }
 
-        AddEnemyToStats(enemy, isDead: false);
-        RaiseStatsChangedFor(enemy.grade);
+        if (_currentTracker != null && enemy.gameObject.scene == _currentTracker.gameObject.scene)
+        {
+            BroadcastSnapshot();
+        }
     }
 
     private void OnEnemyDied(RagdollEnemy enemy)
     {
-        if (enemy == null) return;
-
-        var grade = enemy.grade;
-
-        // Update main stats
-        if (_stats.TryGetValue(grade, out var stats))
+        if (!autoBroadcastSnapshot || enemy == null)
         {
-            stats.dead = Mathf.Min(stats.dead + 1, stats.total);
-            _stats[grade] = stats;
+            return;
         }
 
-        // UPDATE per-refresh death counter
-        if (!_deathCountsSinceRefresh.TryGetValue(grade, out var deathCount))
+        if (_currentTracker != null && enemy.gameObject.scene == _currentTracker.gameObject.scene)
         {
-            deathCount = 0;
-        }
-        _deathCountsSinceRefresh[grade] = deathCount + 1;
-
-        RaiseStatsChangedFor(grade);
-    }
-
-    private void AddEnemyToStats(RagdollEnemy enemy, bool isDead)
-    {
-        var grade = enemy.grade;
-
-        if (!_stats.TryGetValue(grade, out var stats))
-        {
-            stats = new EnemyStats { total = 0, dead = 0 };
-        }
-
-        stats.total++;
-        if (isDead)
-        {
-            stats.dead = Mathf.Min(stats.dead + 1, stats.total);
-        }
-
-        _stats[grade] = stats;
-    }
-
-    public void RaiseStatsRebuilt()
-    {
-        if (OnStatsRebuilt == null) return;
-
-        var list = new List<EnemyStatsSnapshot>(_stats.Count);
-        foreach (var kvp in _stats)
-        {
-            var grade = kvp.Key;
-            var stats = kvp.Value;
-            list.Add(new EnemyStatsSnapshot(grade, stats.total, stats.dead));
-        }
-
-        OnStatsRebuilt?.Invoke(list);
-    }
-
-    private void RaiseStatsChangedFor(EnemyGrade grade)
-    {
-        if (OnEnemyStatsChanged == null) return;
-
-        if (_stats.TryGetValue(grade, out var stats))
-        {
-            OnEnemyStatsChanged.Invoke(grade, stats.total, stats.dead);
-        }
-        else
-        {
-            OnEnemyStatsChanged.Invoke(grade, 0, 0);
+            BroadcastSnapshot();
         }
     }
 
-    /// <summary>
-    /// Optional helper if you prefer a copy instead of the live dictionary reference.
-    /// </summary>
-    public Dictionary<EnemyGrade, int> GetDeathCountsSinceRefreshCopy()
+    private void OnCountsChanged(int alive, int dead)
     {
-        return new Dictionary<EnemyGrade, int>(_deathCountsSinceRefresh);
+        if (!autoBroadcastSnapshot)
+        {
+            return;
+        }
+
+        if (_currentTracker != null)
+        {
+            BroadcastSnapshot();
+        }
+    }
+
+    private void OnStepStarted(int stepIndex, EnemyGrade grade)
+    {
+        if (!autoBroadcastSnapshot)
+        {
+            return;
+        }
+
+        if (_currentTracker != null)
+        {
+            BroadcastSnapshot();
+        }
+    }
+
+    private void OnAllStepsCompleted()
+    {
+        if (!autoBroadcastSnapshot)
+        {
+            return;
+        }
+
+        if (_currentTracker != null)
+        {
+            BroadcastSnapshot();
+        }
+    }
+
+    // --------------------------------------------------
+    // Snapshot broadcaster
+    // --------------------------------------------------
+
+    private void BroadcastSnapshot()
+    {
+        if (_currentTracker == null)
+        {
+            return;
+        }
+
+        _lastSnapshot = _currentTracker.GetSnapshot();
+
+        if (OnSnapshotUpdated != null)
+        {
+            OnSnapshotUpdated.Invoke(_lastSnapshot);
+        }
     }
 }

@@ -36,7 +36,13 @@ public class WorldBendGlobalController : MonoBehaviour
              "E.g. set to -playerXZ (y=0) to keep curvature under player.")]
     public Vector3 trackingOffset = Vector3.zero;
 
-    // Global property IDs
+    [Header("Toon / Outline (Global)")]
+    public Color outlineColor = Color.black;
+    [Range(0f, 0.3f)] public float outlineThickness = 0.03f;
+    [Range(1f, 8f)] public float toonLightSteps = 3f;
+    [Range(0f, 32f)] public float colorSteps = 0f;   // 0 = no posterize
+
+    // Global property IDs (bend)
     static readonly int ID_Strength = Shader.PropertyToID("_WB_Strength_G");
     static readonly int ID_Radius = Shader.PropertyToID("_WB_Radius_G");
     static readonly int ID_Axis = Shader.PropertyToID("_WB_Axis_G");
@@ -51,9 +57,26 @@ public class WorldBendGlobalController : MonoBehaviour
     static readonly int ID_Disable = Shader.PropertyToID("_WB_DisableBend");
     static readonly int ID_Globe = Shader.PropertyToID("_WB_BendGlobe");
 
-    void OnEnable() => Apply();
-    void OnValidate() => Apply();
-    void Update() => Apply();
+    // Global property IDs (toon / outline)
+    static readonly int ID_OutlineColor = Shader.PropertyToID("_WB_OutlineColor_G");
+    static readonly int ID_OutlineThickness = Shader.PropertyToID("_WB_OutlineThickness_G");
+    static readonly int ID_ToonSteps = Shader.PropertyToID("_WB_ToonSteps_G");
+    static readonly int ID_ColorSteps = Shader.PropertyToID("_WB_ColorSteps_G");
+
+    void OnEnable()
+    {
+        Apply();
+    }
+
+    void OnValidate()
+    {
+        Apply();
+    }
+
+    void Update()
+    {
+        Apply();
+    }
 
     void Apply()
     {
@@ -69,6 +92,7 @@ public class WorldBendGlobalController : MonoBehaviour
             Shader.SetGlobalFloat(ID_Strength, 0f);
             Shader.SetGlobalFloat(ID_Disable, 1f);
             DisableAllKeywords();
+            ApplyToonOutlineGlobals(); // still allow toon/outline globals even if bend is off
             return;
         }
 
@@ -93,12 +117,14 @@ public class WorldBendGlobalController : MonoBehaviour
         // Axis (for cylinder mode)
         Vector3 axisWS = useThisForwardAsAxis ? transform.forward : fixedAxis;
         if (axisWS.sqrMagnitude < 1e-8f)
+        {
             axisWS = Vector3.forward;
+        }
+
         axisWS.Normalize();
 
-        // Push globals
+        // Push bend globals
         Shader.SetGlobalFloat(ID_Globe, bendGlobe ? 1f : 0f);
-
 
         Shader.SetGlobalFloat(ID_Strength, strength);
         Shader.SetGlobalFloat(ID_Radius, Mathf.Max(0.01f, radius));
@@ -127,6 +153,17 @@ public class WorldBendGlobalController : MonoBehaviour
             Shader.EnableKeyword("_EDGE_FADE_DITHER");
             Shader.DisableKeyword("_EDGE_FADE_TRANSPARENT");
         }
+
+        // Push toon / outline globals
+        ApplyToonOutlineGlobals();
+    }
+
+    void ApplyToonOutlineGlobals()
+    {
+        Shader.SetGlobalColor(ID_OutlineColor, outlineColor);
+        Shader.SetGlobalFloat(ID_OutlineThickness, outlineThickness);
+        Shader.SetGlobalFloat(ID_ToonSteps, toonLightSteps);
+        Shader.SetGlobalFloat(ID_ColorSteps, colorSteps);
     }
 
     void DisableAllKeywords()

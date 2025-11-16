@@ -104,6 +104,14 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0.0053799977
       objectReference: {fileID: 0}
+    - target: {fileID: 4823269345851464574, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
+      propertyPath: m_Radius
+      value: 0.007354592
+      objectReference: {fileID: 0}
+    - target: {fileID: 4823269345851464574, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
+      propertyPath: m_Center.x
+      value: -3.6610285e-12
+      objectReference: {fileID: 0}
     - target: {fileID: 6031365478891238280, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
       propertyPath: m_AABB.m_Center.x
       value: -0.0000024121255
@@ -241,6 +249,7 @@ MonoBehaviour:
   onFallEnded:
     m_PersistentCalls:
       m_Calls: []
+  enemyDefinition: {fileID: 0}
 --- !u!136 &3367721502876568681
 CapsuleCollider:
   m_ObjectHideFlags: 0

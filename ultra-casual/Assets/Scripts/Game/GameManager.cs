@@ -120,16 +120,16 @@ public class GameManager : MonoBehaviour
         cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.PreGame);
         _gameController?.ResetGameState();
 
-        ResetAll();
-        EnemyFallCoordinator.Instance?.ResetCoordinator();
+        //ResetAll();
+        levelManager?.ResetAll();
+        levelManager.StartLevel();
 
-        // Tell mediator to refresh its view of the world & UI
-        LevelTrackerMediator.Instance.RefreshLevels();
     }
 
     /// <summary>End the current run.</summary>
     public void EndGame()
     {
+        levelManager.EndLevel();
         _gameController?.EndGame();
         PokiBridge.GameplayStop();
     }
@@ -188,17 +188,6 @@ public class GameManager : MonoBehaviour
         try
         {
             EndGame();
-
-            var deathsCopy = LevelTrackerMediator.Instance.GetDeathCountsSinceRefreshCopy();
-
-            foreach (var kvp in deathsCopy)
-            {
-                EnemyGrade grade = kvp.Key;
-                int deaths = kvp.Value;
-
-                Debug.Log($"[DeathCounter] Grade: {grade} | Deaths this refresh: {deaths}");
-            }
-
 
             var endGameOrchestrator = FindObjectsByType<EndGameOrchestrator>(FindObjectsSortMode.None)
                 .FirstOrDefault();

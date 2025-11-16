@@ -100,6 +100,15 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     // Optional public read-only flag for other code
     public bool IsFalling => _isFalling;
 
+    void OnEnable()
+    {
+        Debug.LogWarning("OnEnable" + gameObject.name, gameObject);
+    }
+
+    void OnDisable()
+    {
+        Debug.LogWarning("OnDisable" + gameObject.name, gameObject);
+    }
     void Reset()
     {
         if (!rig) rig = GetComponentInChildren<RagdollRig>(true);

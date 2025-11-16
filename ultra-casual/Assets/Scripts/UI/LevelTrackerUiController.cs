@@ -13,6 +13,8 @@ public class LevelTrackerUiController : MonoBehaviour
 
     [Tooltip("Prefab with UiLevelTrackerElement + UiLabelRef.")]
     public UiLevelTrackerElement rowPrefab;
+
+    [Tooltip("Mediator that provides level snapshots.")]
     public LevelTrackerMediator levelTrackerMediator;
 
     // grade -> active instantiated UI row
@@ -23,68 +25,81 @@ public class LevelTrackerUiController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (levelTrackerMediator == null) return;
+        if (levelTrackerMediator == null)
+        {
+            return;
+        }
 
-        levelTrackerMediator.OnStatsRebuilt += HandleStatsRebuilt;
-        levelTrackerMediator.OnEnemyStatsChanged += HandleEnemyStatsChanged;
+        levelTrackerMediator.OnSnapshotUpdated += HandleSnapshotUpdated;
+        levelTrackerMediator.OnTrackersRefreshed += HandleTrackersRefreshed;
 
-        levelTrackerMediator.RaiseStatsRebuilt();
+        // Ask mediator to push a snapshot so we can build initial UI
+        levelTrackerMediator.ForceBroadcastSnapshot();
     }
 
     private void OnDisable()
     {
         if (levelTrackerMediator != null)
         {
-            levelTrackerMediator.OnStatsRebuilt -= HandleStatsRebuilt;
-            levelTrackerMediator.OnEnemyStatsChanged -= HandleEnemyStatsChanged;
+            levelTrackerMediator.OnSnapshotUpdated -= HandleSnapshotUpdated;
+            levelTrackerMediator.OnTrackersRefreshed -= HandleTrackersRefreshed;
         }
 
         // We only clear active rows into the pool; pooled instances stay around.
         ClearAllRows();
     }
 
-    private void HandleStatsRebuilt(List<LevelTrackerMediator.EnemyStatsSnapshot> stats)
+    // --------------------------------------------------
+    // Handlers
+    // --------------------------------------------------
+
+    private void HandleTrackersRefreshed()
+    {
+        // New level / trackers: clear current UI
+        ClearAllRows();
+    }
+
+    private void HandleSnapshotUpdated(LevelEnemyTracker.LevelSnapshot snapshot)
     {
         ClearAllRows();
 
-        if (container == null || rowPrefab == null) return;
-
-        foreach (var snapshot in stats)
+        if (container == null || rowPrefab == null)
         {
-            if (snapshot.total <= 0) continue; // no need to show empty grades, unless you want to
-
-            var row = GetRow();
-            row.SetGrade(snapshot.grade);
-            row.UpdateCounts(snapshot.grade, snapshot.dead, snapshot.total);
-
-            _rows[snapshot.grade] = row;
-        }
-    }
-
-    private void HandleEnemyStatsChanged(EnemyGrade grade, int total, int dead)
-    {
-        if (container == null || rowPrefab == null) return;
-
-        // If we don't have a row for this grade yet and there is at least one enemy, create (or reuse) it.
-        if (!_rows.TryGetValue(grade, out var row) || row == null)
-        {
-            if (total <= 0) return;
-
-            row = GetRow();
-            row.SetGrade(grade);
-            _rows[grade] = row;
-        }
-
-        // If total is now zero, return the row to the pool and remove it from active rows.
-        if (total <= 0)
-        {
-            ReleaseRow(row);
-            _rows.Remove(grade);
             return;
         }
 
-        row.UpdateCounts(grade, dead, total);
+        if (snapshot == null || snapshot.grades == null)
+        {
+            return;
+        }
+
+        foreach (var gradeSnapshot in snapshot.grades)
+        {
+            if (gradeSnapshot == null)
+            {
+                continue;
+            }
+
+            // Don’t show empty grades unless you want that
+            if (gradeSnapshot.total <= 0)
+            {
+                continue;
+            }
+
+            var row = GetRow();
+            row.SetGrade(gradeSnapshot.grade);
+            row.UpdateCounts(gradeSnapshot.grade, gradeSnapshot.dead, gradeSnapshot.total);
+
+            _rows[gradeSnapshot.grade] = row;
+
+            // If you want to visually mark current grade or cleared grades,
+            // you could add calls here (e.g. row.SetCurrent(gradeSnapshot.isCurrent))
+        }
     }
+
+    // --------------------------------------------------
+    // Pool + row helpers
+    // --------------------------------------------------
 
     /// <summary>
     /// Clears all active rows (returns them to the pool).
@@ -99,6 +114,7 @@ public class LevelTrackerUiController : MonoBehaviour
                 ReleaseRow(kvp.Value);
             }
         }
+
         _rows.Clear();
     }
 
@@ -140,12 +156,14 @@ public class LevelTrackerUiController : MonoBehaviour
     /// </summary>
     private void ReleaseRow(UiLevelTrackerElement row)
     {
-        if (row == null) return;
+        if (row == null)
+        {
+            return;
+        }
 
         row.gameObject.SetActive(false);
 
-        // Optionally keep them under the same container, just inactive.
-        // If you want a separate pool parent, assign it here instead.
+        // Keep them under the same container, just inactive.
         if (container != null)
         {
             row.transform.SetParent(container, false);
