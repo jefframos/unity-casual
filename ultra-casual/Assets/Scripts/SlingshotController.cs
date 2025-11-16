@@ -574,4 +574,9 @@ public class SlingshotController : MonoBehaviour, IGameController
     {
         throw new NotImplementedException();
     }
+
+    public void DisableInput()
+    {
+        throw new NotImplementedException();
+    }
 }

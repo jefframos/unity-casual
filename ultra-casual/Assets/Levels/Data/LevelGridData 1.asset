@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: LevelGridData 1
   m_EditorClassIdentifier: 
   levelName: Shape1
-  gridSize: {x: 8, y: 8}
+  gridSize: {x: 8, y: 11}
   cellSize: 5
   depth: 1
   placed:
@@ -28,4 +28,7 @@ MonoBehaviour:
     layerZ: 0
   - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}
     origin: {x: 3, y: 4}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 86e4a963f612c174387b1bf90346a01a, type: 2}
+    origin: {x: 4, y: 6}
     layerZ: 0

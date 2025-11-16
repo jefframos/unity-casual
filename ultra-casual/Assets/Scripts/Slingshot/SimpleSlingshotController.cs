@@ -153,7 +153,10 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
             UpdateDrag();
         }
     }
-
+    public void DisableInput()
+    {
+        enableInput = false;
+    }
     public void EnableInput()
     {
         enableInput = true;
@@ -453,7 +456,7 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
 
         ClearPreview();
 
-        enableInput = false;
+        DisableInput();
     }
 
     private void CancelShot()

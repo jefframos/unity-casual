@@ -9,6 +9,10 @@ using UnityEngine.Rendering;
 
 public class LevelManager : MonoBehaviour
 {
+    [Header("Level Data")]
+    [SerializeField] private Levels levels;          // ScriptableObject
+    [SerializeField] private Transform levelPivot;   // Where levels are spawned
+
     [Header("Level Builders")]
     public LevelBuilder[] levelBuilders;
 
@@ -23,6 +27,29 @@ public class LevelManager : MonoBehaviour
     /// current level is fully completed (all steps done, all enemies dead).
     /// </summary>
     public bool LastRunCompletedLevel { get; private set; }
+
+    // -----------------------------
+    // Current level state
+    // -----------------------------
+    public int CurrentAreaIndex { get; private set; } = -1;
+    public int CurrentLevelIndexInArea { get; private set; } = -1;
+    public int CurrentGlobalLevelIndex { get; private set; } = -1;
+    public GameObject CurrentLevelInstance { get; private set; }
+
+    // Event payload
+    public struct LevelSpawnInfo
+    {
+        public int areaIndex;
+        public int levelIndexInArea;
+        public int globalIndex;
+        public AreaDefinition areaDefinition;
+        public GameObject levelInstance;
+    }
+
+    /// <summary>
+    /// Fired whenever a new level prefab has been spawned under the pivot.
+    /// </summary>
+    public event Action<LevelSpawnInfo> NewLevelSpawnedEvent;
 
     private void FindEnemyAppear()
     {
@@ -40,11 +67,10 @@ public class LevelManager : MonoBehaviour
                                  "Enemies will appear immediately with no intro.");
             }
         }
-
     }
+
     private void Start()
     {
-
         RebuildResettableCache();
     }
 
@@ -77,16 +103,142 @@ public class LevelManager : MonoBehaviour
     }
 
     // --------------------------------------------------
-    // Level flow
+    // Level SPAWNING API
     // --------------------------------------------------
 
     /// <summary>
-    /// Called when the player is in state to shoot / start a run.
-    /// Each time this is called, it must:
-    /// - Resume or advance the current level that is on the scene.
-    /// - If this call started a new step (either first step or a later one),
-    ///   it must call the async LevelStepStarted() with all enemies of that step.
+    /// Spawn level by area + local index.
     /// </summary>
+    public async Task SpawnLevelByAreaAndIndex(int areaIndex, int levelIndexInArea)
+    {
+        if (levels == null)
+        {
+            Debug.LogError("[LevelManager] No Levels ScriptableObject assigned.");
+            return;
+        }
+
+        GameObject prefab = levels.GetLevelByArea(
+            areaIndex,
+            levelIndexInArea,
+            out int globalIndex,
+            out AreaDefinition areaDef);
+
+        if (prefab == null)
+        {
+            Debug.LogError($"[LevelManager] SpawnLevelByAreaAndIndex: invalid indices (area={areaIndex}, level={levelIndexInArea}).");
+            return;
+        }
+
+        await SpawnLevelInternal(prefab, areaIndex, levelIndexInArea, globalIndex, areaDef);
+    }
+
+    /// <summary>
+    /// Spawn level by global order index (0..TotalLevels-1).
+    /// </summary>
+    public async Task SpawnLevelByGlobalIndex(int globalIndex)
+    {
+        if (levels == null)
+        {
+            Debug.LogError("[LevelManager] No Levels ScriptableObject assigned.");
+            return;
+        }
+
+        GameObject prefab = levels.GetLevelByGlobalIndex(
+            globalIndex,
+            out AreaDefinition areaDef,
+            out int areaIndex,
+            out int levelIndexInArea);
+
+        if (prefab == null)
+        {
+            Debug.LogError($"[LevelManager] SpawnLevelByGlobalIndex: invalid globalIndex={globalIndex}.");
+            return;
+        }
+
+        await SpawnLevelInternal(prefab, areaIndex, levelIndexInArea, globalIndex, areaDef);
+    }
+
+    private async Task SpawnLevelInternal(
+        GameObject prefab,
+        int areaIndex,
+        int levelIndexInArea,
+        int globalIndex,
+        AreaDefinition areaDef)
+    {
+        if (levelPivot == null)
+        {
+            Debug.LogError("[LevelManager] LevelPivot is not assigned.");
+            return;
+        }
+
+        // cleanup previous level
+        ClearLevelPivot();
+
+        await UniTask.WaitForEndOfFrame();
+
+        // spawn new one
+        GameObject instance = Instantiate(prefab, levelPivot);
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        //instance.transform.localScale = Vector3.one;
+
+        CurrentAreaIndex = areaIndex;
+        CurrentLevelIndexInArea = levelIndexInArea;
+        CurrentGlobalLevelIndex = globalIndex;
+        CurrentLevelInstance = instance;
+
+        // Rebuild caches so reset + enemy tracking includes this new level.
+        RebuildResettableCache();
+        ResetAll();
+        LevelTrackerMediator.Instance?.RefreshLevels();
+
+        // Fire event hook
+        var info = new LevelSpawnInfo
+        {
+            areaIndex = areaIndex,
+            levelIndexInArea = levelIndexInArea,
+            globalIndex = globalIndex,
+            areaDefinition = areaDef,
+            levelInstance = instance
+        };
+
+        NewLevelSpawned(info);
+    }
+
+    private void ClearLevelPivot()
+    {
+        if (levelPivot == null) return;
+
+        for (int i = levelPivot.childCount - 1; i >= 0; i--)
+        {
+            var child = levelPivot.GetChild(i);
+            if (Application.isPlaying)
+            {
+                Destroy(child.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(child.gameObject);
+            }
+        }
+
+        CurrentLevelInstance = null;
+    }
+
+    /// <summary>
+    /// Called whenever a new level prefab has been spawned.
+    /// Dispatches the NewLevelSpawnedEvent.
+    /// </summary>
+    private void NewLevelSpawned(LevelSpawnInfo info)
+    {
+        NewLevelSpawnedEvent?.Invoke(info);
+        Debug.Log($"[LevelManager] New level spawned: Area={info.areaIndex}, LocalLevel={info.levelIndexInArea}, Global={info.globalIndex}");
+    }
+
+    // --------------------------------------------------
+    // Level flow (your existing code)
+    // --------------------------------------------------
+
     internal async Task StartLevel(SlingshotCinemachineBridge cameraBridge, GameUiHandler uiHandler)
     {
         EnemyFallCoordinator.Instance?.ResetCoordinator();
@@ -108,13 +260,11 @@ public class LevelManager : MonoBehaviour
         // Still nothing? Then there is genuinely no LevelEnemyTracker in the scene.
         if (mediator.CurrentTracker == null)
         {
-            Debug.LogWarning("[LevelManager] StartLevel: RefreshLevels() did not find any LevelEnemyTracker. Aborting StartLevel.");
+            Debug.LogWarning("LevelManager.StartLevel: RefreshLevels() did not find any LevelEnemyTracker. Aborting StartLevel.");
             return;
         }
 
-        // Start or resume: this will either start the first step or,
-        // if the current grade is cleared, advance to the next one.
-        // It returns the newly activated enemies for that step.
+        // Start or resume.
         List<GameObject> stepEnemies = mediator.StartOrResumeLevel() ?? new List<GameObject>();
 
         int count = stepEnemies.Count;
@@ -122,19 +272,13 @@ public class LevelManager : MonoBehaviour
 
         if (count > 0)
         {
-
             cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.EnemyReveal);
             uiHandler.SetMode(UiMode.EnemyReveal);
-            // We actually started a step on this frame.
-            // Fire-and-forget the async intro of this step.
+
             await LevelStepStarted(stepEnemies);
         }
     }
 
-    /// <summary>
-    /// Called when a run (shot) ends. This method must know if the level
-    /// is fully completed or not.
-    /// </summary>
     internal void EndLevel()
     {
         LastRunCompletedLevel = false;
@@ -159,10 +303,6 @@ public class LevelManager : MonoBehaviour
             Debug.Log($"[LevelManager] Grade {g.grade}: {g.dead}/{g.total} dead (current: {g.isCurrent})");
         }
 
-        // Determine if the WHOLE level is completed:
-        // - There were enemies.
-        // - All enemies are dead.
-        // - Tracker has no active step anymore (AllStepsCompleted fired).
         bool anyEnemies = snapshot.totalEnemies > 0;
         bool allDead = anyEnemies && snapshot.totalDead == snapshot.totalEnemies;
         bool noActiveStep = !snapshot.hasActiveStep;
@@ -178,35 +318,17 @@ public class LevelManager : MonoBehaviour
         {
             Debug.Log("[LevelManager] Level NOT completed yet (either more enemies or more steps exist).");
         }
-
-        // Note: we do NOT advance to next step here.
-        // Step advancement is handled by StartLevel() via StartOrResumeLevel().
     }
 
-    /// <summary>
-    /// Start a new game/run: reset everything and prepare gameplay.
-    /// </summary>
     public void StartGame()
     {
         ResetAll();
-        // Optionally trigger StartLevel() here if your flow wants
-        // to immediately start the first step after reset.
-        // StartLevel();
     }
 
-    /// <summary>
-    /// End the current run/game.
-    /// </summary>
     public void EndGame()
     {
-        // Your higher-level game-over / victory logic can look at:
-        // - LastRunCompletedLevel
-        // - current snapshot, etc.
+        // higher-level game-over logic
     }
-
-    // --------------------------------------------------
-    // Resetting
-    // --------------------------------------------------
 
     public void ResetAll()
     {
@@ -229,15 +351,6 @@ public class LevelManager : MonoBehaviour
         LevelTrackerMediator.Instance.RefreshLevels();
     }
 
-    // --------------------------------------------------
-    // Async hook when a level step actually starts
-    // --------------------------------------------------
-
-    /// <summary>
-    /// Async hook called whenever a new level step actually begins.
-    /// It receives all enemies that will be active on this step.
-    /// Now delegates to EnemyAppearingOrchestrator.
-    /// </summary>
     private async UniTask LevelStepStarted(List<GameObject> enemiesOnStep)
     {
         if (enemiesOnStep == null || enemiesOnStep.Count == 0)
@@ -245,9 +358,7 @@ public class LevelManager : MonoBehaviour
             return;
         }
 
-
         FindEnemyAppear();
-        // This token is cancelled when LevelManager is destroyed.
         CancellationToken token = this.GetCancellationTokenOnDestroy();
 
         if (enemyAppearingOrchestrator != null)
@@ -256,7 +367,6 @@ public class LevelManager : MonoBehaviour
         }
         else
         {
-            // Fallback: just make sure they are active immediately.
             foreach (var enemy in enemiesOnStep)
             {
                 if (enemy != null && !enemy.activeSelf)

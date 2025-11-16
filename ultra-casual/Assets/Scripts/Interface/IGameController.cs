@@ -13,6 +13,7 @@ public interface IGameController
     /// </summary>
     void EndGame();
     void EnableInput();
+    void DisableInput();
 
     /// <summary>
     /// Fired when the launch (shot) starts — passes the follow target.

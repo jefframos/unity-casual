@@ -33,6 +33,9 @@ public class GameManager : MonoBehaviour
     {
         CacheGameController();
 
+
+        await levelManager.SpawnLevelByGlobalIndex(0);
+
         await StartGame();
         if (uiHandler != null)
         {
@@ -122,6 +125,8 @@ public class GameManager : MonoBehaviour
     /// <summary>Start a new run: reset everything and ask the controller to prep gameplay.</summary>
     public async Task StartGame()
     {
+        _gameController.DisableInput();
+
         _gameController.ResetGameState();
 
         //ResetAll();

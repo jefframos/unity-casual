@@ -47,6 +47,13 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
         {
             if (delayBeforeFirstEnemy > 0f)
             {
+
+                SlingshotCinemachineBridge.Instance.SetCameraMode(
+                   SlingshotCinemachineBridge.GameCameraMode.EnemyReveal,
+                   enemies[0].transform,
+                   enemies[0].transform
+               );
+
                 await UniTask.Delay(
                     TimeSpan.FromSeconds(delayBeforeFirstEnemy),
                     cancellationToken: token
