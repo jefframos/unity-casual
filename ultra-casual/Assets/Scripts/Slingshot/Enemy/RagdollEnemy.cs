@@ -102,12 +102,12 @@ public class RagdollEnemy : MonoBehaviour, IResettable
 
     void OnEnable()
     {
-        Debug.LogWarning("OnEnable" + gameObject.name, gameObject);
+        //Debug.LogWarning("OnEnable" + gameObject.name, gameObject);
     }
 
     void OnDisable()
     {
-        Debug.LogWarning("OnDisable" + gameObject.name, gameObject);
+        //Debug.LogWarning("OnDisable" + gameObject.name, gameObject);
     }
     void Reset()
     {

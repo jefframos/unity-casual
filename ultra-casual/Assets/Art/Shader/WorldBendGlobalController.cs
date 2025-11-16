@@ -29,7 +29,8 @@ public class WorldBendGlobalController : MonoBehaviour
 
     [Header("Edge Fade")]
     [Range(0f, 1f)] public float edgeFadeStartPct = 0.85f;
-    public bool transparentBlend = false;
+    [Tooltip("If true, environment edge fade is smooth transparent. If false, it uses dither.")]
+    public bool transparentBlend = true;
 
     [Header("Tracking Offset")]
     [Tooltip("Extra world-space offset used before computing bending.\n" +
@@ -41,6 +42,14 @@ public class WorldBendGlobalController : MonoBehaviour
     [Range(0f, 0.3f)] public float outlineThickness = 0.03f;
     [Range(1f, 8f)] public float toonLightSteps = 3f;
     [Range(0f, 32f)] public float colorSteps = 0f;   // 0 = no posterize
+
+    [Header("Near Camera Dither")]
+    [Tooltip("Enable/disable near-camera dither fade for all bent objects.")]
+    public bool nearCameraDither = true;
+    [Tooltip("Distance from camera where dither fade is fully invisible (inside this, clipped).")]
+    public float ditherNear = 0.5f;
+    [Tooltip("Distance from camera where object is fully visible again.")]
+    public float ditherFar = 1.0f;
 
     // Global property IDs (bend)
     static readonly int ID_Strength = Shader.PropertyToID("_WB_Strength_G");
@@ -62,6 +71,10 @@ public class WorldBendGlobalController : MonoBehaviour
     static readonly int ID_OutlineThickness = Shader.PropertyToID("_WB_OutlineThickness_G");
     static readonly int ID_ToonSteps = Shader.PropertyToID("_WB_ToonSteps_G");
     static readonly int ID_ColorSteps = Shader.PropertyToID("_WB_ColorSteps_G");
+
+    // Global property IDs (near-camera dither)
+    static readonly int ID_DitherNear = Shader.PropertyToID("_WB_DitherNear_G");
+    static readonly int ID_DitherFar = Shader.PropertyToID("_WB_DitherFar_G");
 
     void OnEnable()
     {
@@ -86,13 +99,30 @@ public class WorldBendGlobalController : MonoBehaviour
             return;
         }
 
-        // disable full bend
+        // Push near-camera dither globals (even if disabled, shader reads them)
+        Shader.SetGlobalFloat(ID_DitherNear, ditherNear);
+        Shader.SetGlobalFloat(ID_DitherFar, ditherFar);
+
+        // Toggle near-camera dither keyword (independent)
+        if (nearCameraDither)
+        {
+            Shader.EnableKeyword("_NEAR_DITHER_ON");
+        }
+        else
+        {
+            Shader.DisableKeyword("_NEAR_DITHER_ON");
+        }
+
+        // Handle full bend disable
         if (disableBend)
         {
             Shader.SetGlobalFloat(ID_Strength, 0f);
             Shader.SetGlobalFloat(ID_Disable, 1f);
-            DisableAllKeywords();
-            ApplyToonOutlineGlobals(); // still allow toon/outline globals even if bend is off
+
+            // Edge fade keywords still reflect chosen mode
+            ApplyEdgeFadeKeywords();
+
+            ApplyToonOutlineGlobals(); // allow toon/outline even if bend off
             return;
         }
 
@@ -143,19 +173,27 @@ public class WorldBendGlobalController : MonoBehaviour
 
         Shader.EnableKeyword("_BEND_USE_GLOBAL");
 
+        // Edge fade mode (environment)
+        ApplyEdgeFadeKeywords();
+
+        // Toon / outline globals
+        ApplyToonOutlineGlobals();
+    }
+
+    void ApplyEdgeFadeKeywords()
+    {
         if (transparentBlend)
         {
+            // Smooth transparent edge fade
             Shader.EnableKeyword("_EDGE_FADE_TRANSPARENT");
             Shader.DisableKeyword("_EDGE_FADE_DITHER");
         }
         else
         {
+            // Edge fade via dithering (environment-only)
             Shader.EnableKeyword("_EDGE_FADE_DITHER");
             Shader.DisableKeyword("_EDGE_FADE_TRANSPARENT");
         }
-
-        // Push toon / outline globals
-        ApplyToonOutlineGlobals();
     }
 
     void ApplyToonOutlineGlobals()
@@ -171,5 +209,6 @@ public class WorldBendGlobalController : MonoBehaviour
         Shader.DisableKeyword("_BEND_USE_GLOBAL");
         Shader.DisableKeyword("_EDGE_FADE_TRANSPARENT");
         Shader.DisableKeyword("_EDGE_FADE_DITHER");
+        Shader.DisableKeyword("_NEAR_DITHER_ON");
     }
 }

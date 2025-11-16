@@ -12,8 +12,8 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
         _ColorSteps ("Color Steps (per-material)", Range(0, 32)) = 0
 
         [Header(Outline)]
-        _OutlineColor    ("Outline Color (per-material)", Color) = (0, 0, 0, 1)
-        _OutlineThickness("Outline Thickness (per-material)", Range(0, 0.1)) = 0.03
+        _OutlineColor     ("Outline Color (per-material)", Color) = (0, 0, 0, 1)
+        _OutlineThickness ("Outline Thickness (per-material)", Range(0, 0.1)) = 0.03
     }
 
     SubShader
@@ -53,7 +53,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
             // Feature toggles
             #pragma multi_compile _ _BEND_USE_GLOBAL
-            #pragma multi_compile _ _EDGE_FADE_DITHER _EDGE_FADE_TRANSPARENT
+            #pragma multi_compile _ _EDGE_FADE_DITHER
+            #pragma multi_compile _ _EDGE_FADE_TRANSPARENT
+            #pragma multi_compile _ _NEAR_DITHER_ON
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
@@ -61,7 +63,6 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
 
-            // -------- Per-material (textures/colors only) --------
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseColor;
                 float4 _BaseMap_ST;
@@ -73,8 +74,8 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             CBUFFER_END
 
             // -------- GLOBALS (driven by controller) --------
-            float _WB_DisableBend;      // GLOBAL
-            float _WB_BendGlobe;        // GLOBAL
+            float _WB_DisableBend;
+            float _WB_BendGlobe;
 
             float _WB_Strength_G;
             float _WB_Radius_G;
@@ -92,6 +93,10 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             float  _WB_OutlineThickness_G;
             float  _WB_ToonSteps_G;
             float  _WB_ColorSteps_G;
+
+            // Global near-camera dither
+            float  _WB_DitherNear_G;
+            float  _WB_DitherFar_G;
 
             struct Attributes
             {
@@ -111,6 +116,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                 float4 shadowCoord : TEXCOORD4;
                 #endif
+                float  viewDepth  : TEXCOORD5;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -120,6 +126,34 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float R = max(radius, 1e-3);
                 float d = min(dist, R - 1e-4);
                 return R - sqrt(R * R - d * d);
+            }
+
+            // 4x4 Bayer dither pattern in [0,1)
+            float Dither4x4(float2 pixelPos)
+            {
+                int x = (int)pixelPos.x & 3;
+                int y = (int)pixelPos.y & 3;
+                int idx = x + (y << 2);
+
+                float threshold = 0.0;
+                if      (idx == 0)  threshold = 0.0;
+                else if (idx == 1)  threshold = 8.0;
+                else if (idx == 2)  threshold = 2.0;
+                else if (idx == 3)  threshold = 10.0;
+                else if (idx == 4)  threshold = 12.0;
+                else if (idx == 5)  threshold = 4.0;
+                else if (idx == 6)  threshold = 14.0;
+                else if (idx == 7)  threshold = 6.0;
+                else if (idx == 8)  threshold = 3.0;
+                else if (idx == 9)  threshold = 11.0;
+                else if (idx == 10) threshold = 1.0;
+                else if (idx == 11) threshold = 9.0;
+                else if (idx == 12) threshold = 15.0;
+                else if (idx == 13) threshold = 7.0;
+                else if (idx == 14) threshold = 13.0;
+                else                threshold = 5.0;
+
+                return (threshold + 0.5) / 16.0;
             }
 
             Varyings vert(Attributes IN)
@@ -132,7 +166,6 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float3 posWS = TransformObjectToWorld(IN.positionOS.xyz);
                 float3 nrmWS = TransformObjectToWorldNormal(IN.normalOS);
 
-                // Skip bending if disabled
                 if (_WB_DisableBend > 0.5)
                 {
                     OUT.positionWS = posWS;
@@ -141,13 +174,15 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                     OUT.uv         = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
                     OUT.distAbs    = 0.0;
 
+                    float3 viewPosNoBend = TransformWorldToView(posWS);
+                    OUT.viewDepth = -viewPosNoBend.z;
+
                     #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                         OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
                     #endif
                     return OUT;
                 }
 
-                // Read globals
                 float  strength    = _WB_Strength_G;
                 float  radius      = _WB_Radius_G;
                 float3 axisWS      = normalize(_WB_Axis_G.xyz);
@@ -158,22 +193,17 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float3 compMask    = _WB_ComponentMask_G.xyz;
                 float3 trackOffset = _WB_TrackOffset_G.xyz;
 
-                // Slide bend field with tracking offset
                 float3 bendPosWS = posWS + trackOffset;
 
-                // Deltas from origin
-                float3 deltaRaw  = bendPosWS - originWS;    // unmasked
-                float3 deltaMask = deltaRaw * compMask;     // masked (for cyl)
+                float3 deltaRaw  = bendPosWS - originWS;
+                float3 deltaMask = deltaRaw * compMask;
 
-                // Cylinder distance (original behaviour)
                 float adCylinder = abs(dot(deltaMask, axisWS));
 
-                // Globe distance: radial in XZ about SAME origin
                 float3 horiz = deltaRaw;
-                // horiz.y = 0.0; // keep original behaviour (Y included) if desired
+                // horiz.y = 0.0; // keep Y in distance as in your original forward
                 float adGlobe = length(horiz);
 
-                // 0 = cylinder, 1 = globe
                 float tGlobe = saturate(_WB_BendGlobe);
                 float ad = lerp(adCylinder, adGlobe, tGlobe);
 
@@ -192,6 +222,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 OUT.normalWS   = normalize(nrmWS);
                 OUT.uv         = IN.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
                 OUT.distAbs    = ad;
+
+                float3 viewPos = TransformWorldToView(posWS);
+                OUT.viewDepth = -viewPos.z;
 
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                     OUT.shadowCoord = TransformWorldToShadowCoord(posWS);
@@ -215,7 +248,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 half3 N = normalize(IN.normalWS);
                 half  NdotL = saturate(dot(N, L.direction));
 
-                // --- Toon steps: global overrides per-material if > 0 ---
+                // Toon steps
                 half toonSteps =
                     (_WB_ToonSteps_G > 0.0)
                         ? (half)_WB_ToonSteps_G
@@ -231,26 +264,59 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 half3 ambient = SampleSH(N) * baseCol.rgb;
                 half3 color   = lit + ambient;
 
-                // --- Optional color posterize: global overrides per-material if > 0 ---
+                // Color posterize
                 float steps = (_WB_ColorSteps_G > 0.0) ? _WB_ColorSteps_G : _ColorSteps;
                 if (steps > 1.0)
                 {
                     color = floor(color * steps) / steps;
                 }
 
-                float fadeAlpha = 1.0;
+                float alpha = baseCol.a;
+
+                // ----- Environment edge fade -----
                 #if defined(_EDGE_FADE_TRANSPARENT)
-                    float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
-                    fadeAlpha = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
+                    {
+                        float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
+                        float edgeT = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
+                        alpha *= edgeT;
+                    }
+                #elif defined(_EDGE_FADE_DITHER)
+                    {
+                        float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
+                        float edgeT = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
+
+                        float2 screenPos = IN.positionCS.xy / IN.positionCS.w;
+                        float2 pixelPos  = screenPos * _ScreenParams.xy;
+                        float ditherThreshold = Dither4x4(pixelPos);
+
+                        clip(edgeT - ditherThreshold);
+                    }
                 #endif
 
-                return half4(color, baseCol.a * fadeAlpha);
+                // ----- Near-camera dither (independent) -----
+                #if defined(_NEAR_DITHER_ON)
+                    {
+                        float nearD = _WB_DitherNear_G;
+                        float farD  = max(_WB_DitherFar_G, nearD + 0.001);
+
+                        float t = saturate((IN.viewDepth - nearD) / (farD - nearD));
+
+                        float2 screenPosN = IN.positionCS.xy / IN.positionCS.w;
+                        float2 pixelPosN  = screenPosN * _ScreenParams.xy;
+                        float ditherThresholdN = Dither4x4(pixelPosN + 2.37); // small offset
+
+                        clip(t - ditherThresholdN);
+                        alpha *= t;
+                    }
+                #endif
+
+                return half4(color, alpha);
             }
             ENDHLSL
         }
 
         // ---------------------------------------------------------
-        // Outline pass (world-bent shell)
+        // Outline pass
         // ---------------------------------------------------------
         Pass
         {
@@ -268,6 +334,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             #pragma fragment OutlineFrag
             #pragma multi_compile_instancing
             #pragma multi_compile _ _BEND_USE_GLOBAL
+            #pragma multi_compile _ _EDGE_FADE_DITHER
+            #pragma multi_compile _ _EDGE_FADE_TRANSPARENT
+            #pragma multi_compile _ _NEAR_DITHER_ON
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -281,7 +350,6 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float  _OutlineThickness;
             CBUFFER_END
 
-            // Globals used for bending
             float _WB_Strength_G;
             float _WB_Radius_G;
             float4 _WB_Axis_G;
@@ -296,11 +364,13 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             float _WB_DisableBend;
             float _WB_BendGlobe;
 
-            // Global toon / outline controls
             float4 _WB_OutlineColor_G;
             float  _WB_OutlineThickness_G;
             float  _WB_ToonSteps_G;
             float  _WB_ColorSteps_G;
+
+            float  _WB_DitherNear_G;
+            float  _WB_DitherFar_G;
 
             struct OutlineAttributes
             {
@@ -313,6 +383,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             {
                 float4 positionCS : SV_POSITION;
                 float  distAbs    : TEXCOORD0;
+                float  viewDepth  : TEXCOORD1;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -322,6 +393,33 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float R = max(radius, 1e-3);
                 float d = min(dist, R - 1e-4);
                 return R - sqrt(R * R - d * d);
+            }
+
+            float Dither4x4(float2 pixelPos)
+            {
+                int x = (int)pixelPos.x & 3;
+                int y = (int)pixelPos.y & 3;
+                int idx = x + (y << 2);
+
+                float threshold = 0.0;
+                if      (idx == 0)  threshold = 0.0;
+                else if (idx == 1)  threshold = 8.0;
+                else if (idx == 2)  threshold = 2.0;
+                else if (idx == 3)  threshold = 10.0;
+                else if (idx == 4)  threshold = 12.0;
+                else if (idx == 5)  threshold = 4.0;
+                else if (idx == 6)  threshold = 14.0;
+                else if (idx == 7)  threshold = 6.0;
+                else if (idx == 8)  threshold = 3.0;
+                else if (idx == 9)  threshold = 11.0;
+                else if (idx == 10) threshold = 1.0;
+                else if (idx == 11) threshold = 9.0;
+                else if (idx == 12) threshold = 15.0;
+                else if (idx == 13) threshold = 7.0;
+                else if (idx == 14) threshold = 13.0;
+                else                threshold = 5.0;
+
+                return (threshold + 0.5) / 16.0;
             }
 
             OutlineVaryings OutlineVert(OutlineAttributes IN)
@@ -334,19 +432,20 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float3 posWS = TransformObjectToWorld(IN.positionOS.xyz);
                 float3 nrmWS = TransformObjectToWorldNormal(IN.normalOS);
 
-                // Use global thickness if set, else per-material
                 float outlineThickness =
                     (_WB_OutlineThickness_G > 0.0)
                         ? _WB_OutlineThickness_G
                         : _OutlineThickness;
 
-                // Shell expansion along normals in world space
                 posWS += nrmWS * outlineThickness;
 
                 if (_WB_DisableBend > 0.5)
                 {
                     OUT.positionCS = TransformWorldToHClip(posWS);
                     OUT.distAbs    = 0.0;
+
+                    float3 viewPosNoBend = TransformWorldToView(posWS);
+                    OUT.viewDepth = -viewPosNoBend.z;
                     return OUT;
                 }
 
@@ -387,30 +486,29 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 OUT.positionCS = TransformWorldToHClip(posWS);
                 OUT.distAbs    = ad;
 
+                float3 viewPos = TransformWorldToView(posWS);
+                OUT.viewDepth = -viewPos.z;
+
                 return OUT;
             }
 
             float4 OutlineFrag(OutlineVaryings IN) : SV_Target
             {
-                // Resolve thickness from global/per-material
                 float thickness =
                     (_WB_OutlineThickness_G > 0.0)
                         ? _WB_OutlineThickness_G
                         : _OutlineThickness;
 
-                // If thickness is effectively zero, discard
                 if (thickness <= 0.0001)
                 {
                     clip(-1.0);
                 }
 
-                // Resolve outline color: global overrides if its alpha is non-zero
                 float4 col =
                     (_WB_OutlineColor_G.a != 0.0)
                         ? _WB_OutlineColor_G
                         : _OutlineColor;
 
-                // Optional: fade outlines near world-bend edge
                 float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
                 float alphaFade = 1.0;
 
@@ -421,8 +519,34 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 col.a *= alphaFade;
 
-                // If fully transparent after fade, discard
-                clip(col.a - 0.001);
+                // Edge dither (optional)
+                #if defined(_EDGE_FADE_DITHER)
+                    {
+                        float2 screenPosE = IN.positionCS.xy / IN.positionCS.w;
+                        float2 pixelPosE  = screenPosE * _ScreenParams.xy;
+                        float ditherThresholdE = Dither4x4(pixelPosE);
+                        clip(col.a - ditherThresholdE);
+                    }
+                #else
+                    // If not dithering on edge, still discard fully transparent
+                    clip(col.a - 0.001);
+                #endif
+
+                // Near-camera dither (independent)
+                #if defined(_NEAR_DITHER_ON)
+                    {
+                        float nearD = _WB_DitherNear_G;
+                        float farD  = max(_WB_DitherFar_G, nearD + 0.001);
+                        float t = saturate((IN.viewDepth - nearD) / (farD - nearD));
+
+                        float2 screenPosN = IN.positionCS.xy / IN.positionCS.w;
+                        float2 pixelPosN  = screenPosN * _ScreenParams.xy;
+                        float ditherThresholdN = Dither4x4(pixelPosN + 5.91);
+
+                        clip(t - ditherThresholdN);
+                        col.a *= t;
+                    }
+                #endif
 
                 return col;
             }
@@ -449,12 +573,12 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             #pragma multi_compile_instancing
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
             #pragma multi_compile _ _BEND_USE_GLOBAL
-            #pragma multi_compile _ _EDGE_FADE_DITHER _EDGE_FADE_TRANSPARENT
+            #pragma multi_compile _ _EDGE_FADE_DITHER
+            #pragma multi_compile _ _EDGE_FADE_TRANSPARENT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-            // Globals
             float _WB_Strength_G;
             float _WB_Radius_G;
             float4 _WB_Axis_G;
@@ -550,7 +674,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             float4 ShadowPassFragment(Varyings IN) : SV_Target
             {
                 float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
-                float alpha = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
+                float alpha     = 1.0 - smoothstep(edgeStart, _WB_Radius_G, IN.distAbs);
                 clip(alpha - 0.001);
                 return 0;
             }

@@ -3566,12 +3566,15 @@ MonoBehaviour:
   bendStart: 0
   bendEnd: 0
   edgeFadeStartPct: 0.699
-  transparentBlend: 1
+  transparentBlend: 0
   trackingOffset: {x: 0, y: 0, z: 0}
   outlineColor: {r: 0, g: 0, b: 0, a: 1}
   outlineThickness: 0.087
   toonLightSteps: 2
   colorSteps: 26.9
+  nearCameraDither: 0
+  ditherNear: 2
+  ditherFar: 10.3
 --- !u!4 &645890731
 Transform:
   m_ObjectHideFlags: 0
@@ -4191,7 +4194,7 @@ Mesh:
     m_UVInfo: 0
   m_LocalAABB:
     m_Center: {x: 0, y: 0.0014672875, z: -0.1219151}
-    m_Extent: {x: 940.7256, y: 24166.115, z: 940.12195}
+    m_Extent: {x: 1006.7256, y: 25856.115, z: 1006.12195}
   m_MeshUsageFlags: 0
   m_CookingOptions: 30
   m_BakedConvexCollisionMesh: 
@@ -4403,6 +4406,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 784110416}
   m_CullTransparentMesh: 1
+--- !u!1 &794181872
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 794181874}
+  - component: {fileID: 794181873}
+  m_Layer: 0
+  m_Name: EnemyAppearingOrchestrator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &794181873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 794181872}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f842d9e7a12c3634fb9a7937c490d730, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  delayBeforeFirstEnemy: 3
+  delayBetweenEnemies: 3
+  activateInactiveGameObjects: 1
+--- !u!4 &794181874
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 794181872}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.0276985, y: 3.6103783, z: 72.92307}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &811682589
 GameObject:
   m_ObjectHideFlags: 0
@@ -4615,6 +4665,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   persistentLevels: 1
+  autoBroadcastSnapshot: 1
+  _currentTracker: {fileID: 0}
 --- !u!1 &866461750
 GameObject:
   m_ObjectHideFlags: 0
@@ -6303,7 +6355,7 @@ MonoBehaviour:
   ignoreYAxis: 0
   stopSpeedThreshold: 0.05
   stopHoldSeconds: 0.5
-  MaxDistance: 2000
+  MaxDistance: 150
 --- !u!4 &1110770944
 Transform:
   m_ObjectHideFlags: 0
@@ -11927,6 +11979,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2021426120}
     m_Modifications:
+    - target: {fileID: 3343007418179361152, guid: 64d6f827ed14fb347af530ddceeaf3ad, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3766874450668344504, guid: 64d6f827ed14fb347af530ddceeaf3ad, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -11937,7 +11993,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3766874450668344504, guid: 64d6f827ed14fb347af530ddceeaf3ad, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 54.1
+      value: 31.65
       objectReference: {fileID: 0}
     - target: {fileID: 3766874450668344504, guid: 64d6f827ed14fb347af530ddceeaf3ad, type: 3}
       propertyPath: m_LocalRotation.w
@@ -15182,6 +15238,7 @@ MonoBehaviour:
   levelBuilders:
   - {fileID: 2095537102}
   - {fileID: 1627466169}
+  enemyAppearingOrchestrator: {fileID: 0}
 --- !u!1 &2021962502
 GameObject:
   m_ObjectHideFlags: 0
@@ -17534,6 +17591,7 @@ MeshRenderer:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 794181874}
   - {fileID: 1261569652}
   - {fileID: 1208732936}
   - {fileID: 1848685015}

@@ -12,6 +12,10 @@ public class LevelManager : MonoBehaviour
     [Header("Level Builders")]
     public LevelBuilder[] levelBuilders;
 
+    [Header("Orchestration")]
+    [Tooltip("Optional: if null, LevelManager will try to find one at runtime.")]
+    public EnemyAppearingOrchestrator enemyAppearingOrchestrator;
+
     private readonly List<IResettable> _resettableCache = new();
 
     /// <summary>
@@ -20,8 +24,27 @@ public class LevelManager : MonoBehaviour
     /// </summary>
     public bool LastRunCompletedLevel { get; private set; }
 
+    private void FindEnemyAppear()
+    {
+        // Find orchestrator if not manually wired in the inspector.
+        if (enemyAppearingOrchestrator == null)
+        {
+#if UNITY_2023_1_OR_NEWER
+            enemyAppearingOrchestrator = FindFirstObjectByType<EnemyAppearingOrchestrator>();
+#else
+            enemyAppearingOrchestrator = FindObjectOfType<EnemyAppearingOrchestrator>();
+#endif
+            if (enemyAppearingOrchestrator == null)
+            {
+                Debug.LogWarning("[LevelManager] No EnemyAppearingOrchestrator found. " +
+                                 "Enemies will appear immediately with no intro.");
+            }
+        }
+
+    }
     private void Start()
     {
+
         RebuildResettableCache();
     }
 
@@ -99,11 +122,11 @@ public class LevelManager : MonoBehaviour
 
         if (count > 0)
         {
-            // We actually started a step on this frame
+            // We actually started a step on this frame.
+            // Fire-and-forget the async intro of this step.
             _ = LevelStepStarted(stepEnemies);
         }
     }
-
 
     /// <summary>
     /// Called when a run (shot) ends. This method must know if the level
@@ -141,7 +164,7 @@ public class LevelManager : MonoBehaviour
         bool allDead = anyEnemies && snapshot.totalDead == snapshot.totalEnemies;
         bool noActiveStep = !snapshot.hasActiveStep;
 
-        bool levelCompleted = allDead;// && noActiveStep;
+        bool levelCompleted = allDead; // && noActiveStep;
         LastRunCompletedLevel = levelCompleted;
 
         if (levelCompleted)
@@ -199,6 +222,7 @@ public class LevelManager : MonoBehaviour
                 r.ResetToInitial();
             }
         }
+
         LevelTrackerMediator.Instance.RefreshLevels();
     }
 
@@ -209,16 +233,35 @@ public class LevelManager : MonoBehaviour
     /// <summary>
     /// Async hook called whenever a new level step actually begins.
     /// It receives all enemies that will be active on this step.
-    /// Currently does nothing.
+    /// Now delegates to EnemyAppearingOrchestrator.
     /// </summary>
-    private UniTask LevelStepStarted(List<GameObject> enemiesOnStep)
+    private async UniTask LevelStepStarted(List<GameObject> enemiesOnStep)
     {
-        // TODO: later you can:
-        // - move camera
-        // - play intro animations
-        // - tutorial prompts
-        // - etc.
-        // For now, do nothing async-wise.
-        return UniTask.CompletedTask;
+        if (enemiesOnStep == null || enemiesOnStep.Count == 0)
+        {
+            return;
+        }
+
+
+        FindEnemyAppear();
+        Debug.LogWarning("FIX THIS APPEARING ORCHESTRATOR");
+        // This token is cancelled when LevelManager is destroyed.
+        CancellationToken token = this.GetCancellationTokenOnDestroy();
+
+        if (enemyAppearingOrchestrator != null)
+        {
+            await enemyAppearingOrchestrator.ShowStepEnemiesAsync(enemiesOnStep, token);
+        }
+        else
+        {
+            // Fallback: just make sure they are active immediately.
+            foreach (var enemy in enemiesOnStep)
+            {
+                if (enemy != null && !enemy.activeSelf)
+                {
+                    enemy.SetActive(true);
+                }
+            }
+        }
     }
 }
