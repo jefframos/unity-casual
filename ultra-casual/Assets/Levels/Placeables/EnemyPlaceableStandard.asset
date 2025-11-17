@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EnemyPlaceableStandard
   m_EditorClassIdentifier: 
   objectId: EnemyStandard
-  prefab: {fileID: 1299643256829841830, guid: 46fb3f9212661124e92fb896751a1c4a, type: 3}
+  prefab: {fileID: 6481937209562056335, guid: d32a7cb9aeab0234986cee72fb9593ec, type: 3}
   size: {x: 2, y: 4}
   prefabOffset: {x: 0, y: 0, z: 0}
   editorColor: {r: 1, g: 0.9112747, b: 0.05098039, a: 0.35}

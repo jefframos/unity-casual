@@ -167,10 +167,14 @@ public class LevelTrackerUiController : MonoBehaviour
         foreach (var gradeSnapshot in snapshot.grades)
         {
             if (gradeSnapshot == null)
+            {
                 continue;
+            }
 
             if (gradeSnapshot.total <= 0)
+            {
                 continue;
+            }
 
             gradeData.Add(new GradeViewData
             {
@@ -188,7 +192,18 @@ public class LevelTrackerUiController : MonoBehaviour
         // Sort by grade enum value
         gradeData.Sort((a, b) => ((int)a.grade).CompareTo((int)b.grade));
 
-        // 🔍 Early-out if nothing changed
+        // 🔍 Detect if this looks like the *start of a fresh level*
+        bool isFreshLevelStart = true;
+        for (int i = 0; i < gradeData.Count; i++)
+        {
+            if (gradeData[i].dead > 0)
+            {
+                isFreshLevelStart = false;
+                break;
+            }
+        }
+
+        // 🔍 Early-out if nothing changed in data
         if (!HasGradeDataChanged(gradeData))
         {
             return;
@@ -200,10 +215,12 @@ public class LevelTrackerUiController : MonoBehaviour
         // From here on, we know there *was* a change
         ClearAllRows();
 
-        // If this is the first time, set the current index
-        if (_currentIndex < 0)
+        // ✅ FIX: ensure current index is valid for this snapshot
+        // - Reset if it was never set
+        // - Reset if it came from a previous level and is out of range
+        // - Reset if this snapshot looks like a brand-new level (all dead == 0)
+        if (_currentIndex < 0 || _currentIndex >= gradeData.Count || isFreshLevelStart)
         {
-            // Default: start at first grade
             _currentIndex = 0;
         }
 
@@ -244,6 +261,7 @@ public class LevelTrackerUiController : MonoBehaviour
         // Apply bar fill (with tween on the current bar)
         await UpdateProgressBarsAsync(gradeData);
     }
+
 
     // --------------------------------------------------
     // Layout + bars
@@ -460,6 +478,7 @@ public class LevelTrackerUiController : MonoBehaviour
             if (bar != null)
             {
                 bar.gameObject.SetActive(false);
+                bar.SetInstantFill(0f);
                 _barPool.Push(bar);
             }
         }

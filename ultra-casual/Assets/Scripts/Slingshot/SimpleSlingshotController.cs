@@ -2,6 +2,12 @@ using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
+public enum SlingshotDistanceMode
+{
+    Point,  // radial/planar distance from center on the slingshot plane
+    Axis    // distance along a world-space axis (Z by default -> "distance between both zeds")
+}
+
 [DisallowMultipleComponent]
 public class SimpleSlingshotController : MonoBehaviour, IGameController
 {
@@ -16,16 +22,24 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
     [Tooltip("Max distance (meters) from the center you can pull.")]
     public float maxPullDistance = 5f;
 
+    [Tooltip("Minimum distance (meters) required to actually fire on release.")]
+    public float minPullDistance = 0.25f;
+
+    [Tooltip("How pull distance is measured for tension/impulse (Point vs Axis).")]
+    public SlingshotDistanceMode distanceMode = SlingshotDistanceMode.Point;
+
+    [Tooltip("Axis used when DistanceMode = Axis. World-space axis. Z (0,0,1) by default.")]
+    public Vector3 distanceAxis = Vector3.forward;
+
+    [Tooltip("Curve that remaps normalized pull [0..1] into tension/impulse [0..1].")]
+    public AnimationCurve tensionCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
     [Header("Movement Limits")]
     [Tooltip("Defines the Z cap and one end of the Y range for the player movement while aiming.")]
     public Transform movementStartLimit;
 
     [Tooltip("Defines the other end of the Y range for the player movement while aiming.")]
     public Transform movementEndYLimit;
-
-
-    [Tooltip("Minimum distance (meters) required to actually fire on release.")]
-    public float minPullDistance = 0.25f;
 
     [Tooltip("Clamp pull position within the poles span.")]
     public bool capWithinPoles = true;
@@ -34,7 +48,7 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
     public float polesEndInset = 0.05f;
 
     [Header("Launch Settings")]
-    [Tooltip("Impulse strength per meter of pull, before angle-based multiplier.")]
+    [Tooltip("Impulse strength per meter of pull (used as the max base impulse before curve/angle).")]
     public float impulsePerMeter = 10f;
 
     [Tooltip("Minimum impulse applied, even for small pulls (if above minPullDistance).")]
@@ -44,27 +58,40 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
     public float maxImpulse = 0f;
 
     [Header("Yaw Limits")]
-    [Tooltip("Maximum yaw (left/right) allowed at full pull (in degrees). " +
-         "Near the start point, the allowed yaw is scaled down towards 0.")]
+    [Tooltip("Maximum yaw (left/right) allowed at full pull (in degrees).\n" +
+             "Near the start point, the allowed yaw is scaled down via the tension curve.")]
     public float maxYawAtFullPull = 60f;
 
-
     [Header("Arc / Angle")]
-    [Tooltip("Launch angle (degrees above horizontal) when not pulling down at all.")]
+    [Tooltip("Launch angle (degrees above horizontal) when at minimum tension.")]
     public float minLaunchAngleDeg = 10f;
 
-    [Tooltip("Launch angle (degrees above horizontal) when pulling down to maxDownPullForMaxAngle.")]
+    [Tooltip("Launch angle (degrees above horizontal) when at maximum tension.")]
     public float maxLaunchAngleDeg = 60f;
 
-    [Tooltip("How far (world units on Y) you must pull DOWN from center to reach maxLaunchAngleDeg.")]
+    [Tooltip("How far (world units on Y) you must pull DOWN from center to reach maxLaunchAngleDeg.\n" +
+             "Note: final angle blending uses tensionCurve, not this alone.")]
     public float maxDownPullForMaxAngle = 2f;
 
-    [Header("Force vs Angle")]
-    [Tooltip("Force multiplier when at minLaunchAngleDeg (typically 1).")]
+    [Header("Force vs Angle (Legacy Blend)")]
+    [Tooltip("Base force multiplier when at minLaunchAngleDeg (used before angle curve).")]
     public float forceMultiplierAtMinAngle = 1f;
 
-    [Tooltip("Force multiplier when at maxLaunchAngleDeg (typically < 1 to reduce force at high arc).")]
+    [Tooltip("Base force multiplier when at maxLaunchAngleDeg (used before angle curve).")]
     public float forceMultiplierAtMaxAngle = 0.5f;
+
+    [Header("Angle → Force Curve")]
+    [Tooltip("Additional curve applied based on angle.\n" +
+             "X = 0 → minLaunchAngleDeg, X = 1 → maxLaunchAngleDeg.\n" +
+             "Y scales the force (e.g. 1 at flat, 0.5 at steep for nicer parabola).")]
+    public AnimationCurve angleForceCurve = AnimationCurve.Linear(0f, 1f, 1f, 0.5f);
+
+    [Header("Cancel Zone")]
+    [Tooltip("If set, dropping the player inside this radius will cancel the shot and reset to start pose.")]
+    public Transform cancelControlPoint;
+
+    [Tooltip("World-space radius around cancelControlPoint that counts as a cancel zone.")]
+    public float cancelRadius = 1f;
 
     [Header("Collision Preview")]
     [Tooltip("Enable simple collision preview using a raycast along the launch direction.")]
@@ -96,7 +123,7 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
     private Vector3 _pullPoint;            // current pull point on the plane
     private Vector3 _launchDir;            // current launch direction (with arc)
     private float _launchImpulse;          // current launch impulse magnitude
-    public float _currentLaunchAngleDeg;  // for debug
+    public float _currentLaunchAngleDeg;   // for debug
     private Vector3 _baselineForward;      // forward direction on the plane at drag start
 
     private Vector3 _startParentPos;
@@ -110,16 +137,7 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
         if (minPullDistance < 0f) minPullDistance = 0f;
         if (minPullDistance > maxPullDistance) minPullDistance = maxPullDistance;
         if (previewMaxDistance < 0f) previewMaxDistance = 0f;
-
-        // if (maxDownPullForMaxAngle < 0.01f) maxDownPullForMaxAngle = 0.01f;
-
-        // // keep angles sane
-        // if (maxLaunchAngleDeg < minLaunchAngleDeg)
-        // {
-        //     float tmp = maxLaunchAngleDeg;
-        //     maxLaunchAngleDeg = minLaunchAngleDeg;
-        //     minLaunchAngleDeg = tmp;
-        // }
+        if (cancelRadius < 0f) cancelRadius = 0f;
     }
 
     private void OnEnable()
@@ -153,14 +171,17 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
             UpdateDrag();
         }
     }
+
     public void DisableInput()
     {
         enableInput = false;
     }
+
     public void EnableInput()
     {
         enableInput = true;
     }
+
     private void HandleInput()
     {
         // Pointer down
@@ -181,7 +202,7 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
 
     private void BeginDrag()
     {
-        if (_target.Parent == null || _target.LeftAnchor == null || _target.RightAnchor == null)
+        if (_target?.Parent == null || _target.LeftAnchor == null || _target.RightAnchor == null)
         {
             Debug.LogWarning("[SimpleSlingshotController] Missing target anchors/parent for drag.");
             return;
@@ -253,6 +274,7 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
         if (capWithinPoles)
         {
             _pullPoint = view.ClampPointBetweenPoles(_pullPoint, polesEndInset);
+
             // Recompute fromCenter/dist after clamp
             fromCenter = _pullPoint - _centerOnPlane;
             fromCenter = Vector3.ProjectOnPlane(fromCenter, view.upAxis);
@@ -268,7 +290,6 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
             dist = fromCenter.magnitude;
         }
 
-
         // 3. Move the slingshot object so the mid of the anchors is at the pull point
         if (_target.LeftAnchor && _target.RightAnchor && _target.Parent)
         {
@@ -277,12 +298,13 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
             _target.Parent.position += delta;
         }
 
-        // >>> ADD THIS BLOCK HERE <<<
+        // Apply movement constraints (Z/Y limits)
         ApplyMovementLimits();
-        // <<< END NEW BLOCK >>>
-        // 4. Compute launch direction with arc from down-pull + impulse with angle-based multiplier
-        // 4. Compute launch direction with arc from down-pull + impulse with angle-based multiplier
-        if (dist > 1e-4f)
+
+        // 4. Compute launch direction with arc + impulse using distance mode + curves
+        float rawDist = ComputeRawPullDistance(_centerOnPlane, _pullPoint);
+
+        if (rawDist > 1e-4f)
         {
             // Horizontal direction (no vertical) from pull to center
             Vector3 flatDir = Vector3.ProjectOnPlane(_centerOnPlane - _pullPoint, view.upAxis);
@@ -295,42 +317,51 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
             {
                 flatDir.Normalize();
 
-                // ---------- NEW: yaw clamp based on pull amount ----------
-                // baseline forward is what we used to forbid forward pulls
+                // ---------- YAW CLAMP USING CURVED PULL AMOUNT ----------
                 Vector3 baselineFwd = _baselineForward;
                 if (baselineFwd.sqrMagnitude < 1e-4f)
                 {
                     baselineFwd = flatDir;
                 }
 
-                // angle between baseline and our current flatDir
-                float yawAngle = Vector3.SignedAngle(baselineFwd, flatDir, view.upAxis);
-
-                // how much we pulled back relative to max
-                float pull01 = Mathf.Clamp01(dist / maxPullDistance);
-
-                // max yaw allowed for this pull amount
-                float allowedYaw = maxYawAtFullPull * pull01;
-
-                float clampedYaw = Mathf.Clamp(yawAngle, -allowedYaw, allowedYaw);
+                float yawPull01 = ComputePull01(_centerOnPlane, _pullPoint, 0f, maxPullDistance);
+                float desiredYawAngle = Vector3.SignedAngle(baselineFwd, flatDir, view.upAxis);
+                float allowedYaw = maxYawAtFullPull * yawPull01;
+                float clampedYaw = Mathf.Clamp(desiredYawAngle, -allowedYaw, allowedYaw);
                 Quaternion yawRot = Quaternion.AngleAxis(clampedYaw, view.upAxis);
                 flatDir = (yawRot * baselineFwd).normalized;
-                // ---------- END NEW YAW CLAMP ----------
+                // ---------- END YAW CLAMP ----------
 
                 // How far did we pull DOWN from the center (world Y)? (center.y - pull.y)
                 float verticalDown = Mathf.Max(0f, _centerOnPlane.y - _pullPoint.y);
+                float verticalT = Mathf.Clamp01(verticalDown / Mathf.Max(0.0001f, maxDownPullForMaxAngle));
 
-                // 0 → maxDownPullForMaxAngle maps to minAngle → maxAngle
-                float t = pull01;//Mathf.Clamp01(verticalDown / maxDownPullForMaxAngle);
-                //Debug.Log(t);
-                _currentLaunchAngleDeg = Mathf.Lerp(minLaunchAngleDeg, maxLaunchAngleDeg, t);
+                // Tension-based normalized pull (with min threshold & curve)
+                float tension01 = ComputePull01(_centerOnPlane, _pullPoint, minPullDistance, maxPullDistance);
 
-                // Angle-based force multiplier (high arc usually = less force)
-                float forceMultiplier = Mathf.Lerp(
+                // Use tension as base parameter for angle
+                float angleT = tension01;
+                _currentLaunchAngleDeg = Mathf.Lerp(minLaunchAngleDeg, maxLaunchAngleDeg, angleT);
+
+                // --- angle-based force curve ---
+                // Normalized angle between min and max
+                float angleNorm = Mathf.InverseLerp(minLaunchAngleDeg, maxLaunchAngleDeg, _currentLaunchAngleDeg);
+
+                // Legacy linear blend (keep your old behavior as a base)
+                float baseForceMult = Mathf.Lerp(
                     forceMultiplierAtMinAngle,
                     forceMultiplierAtMaxAngle,
-                    t
+                    angleT
                 );
+
+                // Curve-based multiplier over angle (0..1 → minAngle..maxAngle)
+                float curveMult = angleForceCurve != null && angleForceCurve.keys != null && angleForceCurve.keys.Length > 0
+                    ? angleForceCurve.Evaluate(angleNorm)
+                    : 1f;
+
+                // Final force multiplier = legacy blend * curve
+                float forceMultiplier = baseForceMult * curveMult;
+                // --- END angle-based force curve ---
 
                 // Tilt the flat direction UP by that angle around the right axis
                 Vector3 rightAxis = Vector3.Cross(view.upAxis, flatDir);
@@ -342,8 +373,10 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
                 Quaternion tilt = Quaternion.AngleAxis(_currentLaunchAngleDeg, rightAxis.normalized);
                 _launchDir = (tilt * flatDir).normalized;
 
-                // impulse from pull distance, scaled by angle multiplier
-                float impulse = dist * impulsePerMeter * forceMultiplier;
+                // Impulse: use maxPullDistance * impulsePerMeter as "max base impulse"
+                float baseMaxImpulse = maxPullDistance * impulsePerMeter;
+                float impulse = tension01 * baseMaxImpulse * forceMultiplier;
+
                 impulse = Mathf.Max(impulse, minImpulse);
                 if (maxImpulse > 0f)
                     impulse = Mathf.Min(impulse, maxImpulse);
@@ -373,6 +406,68 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
 
         // 6. Collision preview (uses full _launchDir including arc)
         UpdateCollisionPreview();
+    }
+
+    /// <summary>
+    /// Raw pull distance based on the configured distance mode:
+    /// - Point: planar distance on the slingshot plane
+    /// - Axis: distance along a world-space axis (Z by default, i.e. "distance between both zeds").
+    /// </summary>
+    private float ComputeRawPullDistance(Vector3 center, Vector3 pullPoint)
+    {
+        switch (distanceMode)
+        {
+            case SlingshotDistanceMode.Axis:
+                {
+                    Vector3 axis = distanceAxis.sqrMagnitude > 1e-6f
+                        ? distanceAxis.normalized
+                        : Vector3.forward;
+
+                    // Project (center - pullPoint) onto the axis. Use magnitude only.
+                    float axisDelta = Vector3.Dot(center - pullPoint, axis);
+                    return Mathf.Max(0f, Mathf.Abs(axisDelta));
+                }
+
+            case SlingshotDistanceMode.Point:
+            default:
+                {
+                    Vector3 delta = Vector3.ProjectOnPlane(center - pullPoint, view.upAxis);
+                    return delta.magnitude;
+                }
+        }
+    }
+
+    /// <summary>
+    /// Normalized pull amount [0..1] with min/max and tensionCurve applied.
+    /// minDist/maxDist are in meters along the chosen distance mode.
+    /// </summary>
+    private float ComputePull01(Vector3 center, Vector3 pullPoint, float minDist, float maxDist)
+    {
+        if (maxDist <= 1e-4f)
+            return 0f;
+
+        float raw = ComputeRawPullDistance(center, pullPoint);
+        float clamped = Mathf.Clamp(raw, Mathf.Clamp(minDist, 0f, maxDist), maxDist);
+        float t = clamped / maxDist;
+
+        if (tensionCurve != null && tensionCurve.keys != null && tensionCurve.keys.Length > 0)
+        {
+            t = tensionCurve.Evaluate(t);
+        }
+
+        return Mathf.Clamp01(t);
+    }
+
+    /// <summary>
+    /// Returns true if the player (parent) is within cancelRadius of cancelControlPoint.
+    /// </summary>
+    private bool IsInsideCancelZone()
+    {
+        if (cancelControlPoint == null || _target?.Parent == null) return false;
+
+        float sqrRadius = cancelRadius * cancelRadius;
+        float sqrDist = (_target.Parent.position - cancelControlPoint.position).sqrMagnitude;
+        return sqrDist <= sqrRadius;
     }
 
     /// <summary>
@@ -417,13 +512,21 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
         _target.Parent.position = pos;
     }
 
-
     private void EndDrag()
     {
         _isDragging = false;
         view.SetBandsVisible(false);
 
-        float pullDistance = Vector3.Distance(_centerOnPlane, _pullPoint);
+        // 1) If inside cancel zone, always cancel (no shot)
+        if (IsInsideCancelZone())
+        {
+            CancelShot();
+            ClearPreview();
+            return;
+        }
+
+        // 2) Otherwise use pull distance / dir to decide
+        float pullDistance = ComputeRawPullDistance(_centerOnPlane, _pullPoint);
 
         // Not enough pull: cancel and reset
         if (pullDistance < minPullDistance || _launchDir == Vector3.zero)
@@ -463,6 +566,9 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
     {
         if (_target?.Parent == null) return;
 
+        ResetGameState();
+
+        // Reset to start pose captured at BeginDrag()
         _target.Parent.position = _startParentPos;
         _target.Parent.rotation = _startParentRot;
         _target.SetKinematic(false);
@@ -574,5 +680,20 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
     {
         get { return _launchImpulse; }
     }
+#if UNITY_EDITOR
+    private void OnDrawGizmosSelected()
+    {
+        if (cancelControlPoint == null || cancelRadius <= 0f)
+            return;
+
+        // Draw main radius
+        Gizmos.color = new Color(1f, 0.3f, 0.3f, 0.8f);
+        Gizmos.DrawWireSphere(cancelControlPoint.position, cancelRadius);
+
+        // Draw a small solid dot at the center so you can see the exact point
+        Gizmos.color = new Color(1f, 0.1f, 0.1f, 1f);
+        Gizmos.DrawSphere(cancelControlPoint.position, Mathf.Min(0.1f, cancelRadius * 0.1f));
+    }
+#endif
 
 }
