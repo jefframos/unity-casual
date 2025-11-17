@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelName: Shape1
   gridSize: {x: 8, y: 11}
-  cellSize: 5
+  cellSize: 1
   depth: 1
   placed:
   - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
@@ -29,6 +29,6 @@ MonoBehaviour:
   - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}
     origin: {x: 3, y: 4}
     layerZ: 0
-  - def: {fileID: 11400000, guid: 86e4a963f612c174387b1bf90346a01a, type: 2}
+  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
     origin: {x: 4, y: 6}
     layerZ: 0

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vectorKind: 3
   direction: {x: 0, y: 0, z: 1}
-  magnitude: 30
+  magnitude: 20
   forceMode: 2
   useDistanceFalloff: 0
   falloffRadius: 5

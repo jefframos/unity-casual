@@ -129,8 +129,14 @@ public class GameManager : MonoBehaviour
 
         _gameController.ResetGameState();
 
+
+
         //ResetAll();
         levelManager?.ResetAll();
+        if (levelManager.LastRunCompletedLevel)
+        {
+            await levelManager.SpawnLevelByGlobalIndex(1);
+        }
         await levelManager.StartLevel(cameraBridge, uiHandler);
 
         cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.PreGame);
@@ -142,7 +148,10 @@ public class GameManager : MonoBehaviour
     public void EndGame()
     {
         levelManager.EndLevel();
+        Debug.Log(levelManager.LastRunCompletedLevel);
         _gameController?.EndGame();
+
+
         PokiBridge.GameplayStop();
     }
 
@@ -154,13 +163,12 @@ public class GameManager : MonoBehaviour
     public void RestartGame(float final)
     {
         _ = RestartGame((int)final);
+
     }
 
     /// <summary>Show final score, then reset and restart gameplay (UniTask flow).</summary>
     public async Task RestartGame(int final)
     {
-        await UniTask.WaitForSeconds(1f);
-
         if (ExplosionCoordinator.Instance != null)
         {
             await ExplosionCoordinator.Instance.WaitForAllExplosionsAsync();

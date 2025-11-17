@@ -13,6 +13,7 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
 
     [Tooltip("Delay between each enemy appearing (seconds).")]
     public float delayBetweenEnemies = 0.1f;
+    public float afterAnimatingTimer = 0.75f;
 
     [Header("Activation")]
     [Tooltip("If true, enemies that are disabled will be SetActive(true) when they appear.")]
@@ -123,13 +124,13 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
                 // Option B: cartoony overshoot pop (0 -> 1.1 -> 1)
                 await enemy.transform
                     .DOScale(Vector3.one, popDuration)
-                    .SetEase(Ease.OutBack).AsyncWaitForCompletion();
-                // .OnComplete(() =>
-                // {
-                //     // settle back to normal size
-                //     enemy.transform.DOScale(Vector3.one, popDuration * 0.4f)
-                //         .SetEase(Ease.InOutSine);
-                // }).AsyncWaitForCompletion();     //          (cancellationToken: token);
+                    .SetEase(Ease.OutBack)//.AsyncWaitForCompletion();
+                .OnComplete(() =>
+                {
+                    // settle back to normal size
+                    enemy.transform.DOScale(Vector3.one, popDuration * 0.4f)
+                        .SetEase(Ease.InOutSine);
+                }).AsyncWaitForCompletion();     //          (cancellationToken: token);
                 // -----------------------------------
 
                 if (delayBetweenEnemies > 0f && i < enemies.Count - 1)
@@ -147,7 +148,7 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
             }
 
             await UniTask.Delay(
-                       TimeSpan.FromSeconds(popDuration),
+                       TimeSpan.FromSeconds(afterAnimatingTimer),
                        cancellationToken: token
                    );
         }

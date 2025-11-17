@@ -2,6 +2,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum UiLevelTrackerState
+{
+    Hidden,
+    Inactive,
+    Active,
+    Completed
+}
+
 [DisallowMultipleComponent]
 public class UiLevelTrackerElement : MonoBehaviour
 {
@@ -27,7 +35,8 @@ public class UiLevelTrackerElement : MonoBehaviour
     public void UpdateCounts(EnemyGrade type, int dead, int total)
     {
         //if (labelRef == null || labelRef.Label == null) return;
-        labelRef.text = $"{dead} / {total}";
+        //labelRef.text = $"{dead} / {total}";
+        labelRef.text = $"{total - dead}";
 
         if (dead == total)
         {
@@ -38,7 +47,12 @@ public class UiLevelTrackerElement : MonoBehaviour
         {
             checker.enabled = false;
             counterContainer.gameObject.SetActive(true);
-
         }
+    }
+
+    // NEW: you can keep this empty or swap graphics based on state later
+    public void SetState(UiLevelTrackerState state)
+    {
+        // TODO: change visuals based on state (Hidden / Active / Completed)
     }
 }
