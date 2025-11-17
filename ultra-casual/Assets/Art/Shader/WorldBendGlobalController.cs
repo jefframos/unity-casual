@@ -51,6 +51,16 @@ public class WorldBendGlobalController : MonoBehaviour
     [Tooltip("Distance from camera where object is fully visible again.")]
     public float ditherFar = 1.0f;
 
+    [Header("Camera Cutout")]
+    [Tooltip("Apply a cylindrical cutout between camera and bend origin (usually player).")]
+    public bool cutoutEnabled = false;
+
+    [Tooltip("Radius (world units) of the cutout cylinder around the line from camera to origin.")]
+    public float cutoutRadius = 1f;
+
+    [Tooltip("Soft fade width at the edge of the radius (world units). 0 = hard cut.")]
+    public float cutoutFadeWidth = 0.5f;
+
     // Global property IDs (bend)
     static readonly int ID_Strength = Shader.PropertyToID("_WB_Strength_G");
     static readonly int ID_Radius = Shader.PropertyToID("_WB_Radius_G");
@@ -75,6 +85,14 @@ public class WorldBendGlobalController : MonoBehaviour
     // Global property IDs (near-camera dither)
     static readonly int ID_DitherNear = Shader.PropertyToID("_WB_DitherNear_G");
     static readonly int ID_DitherFar = Shader.PropertyToID("_WB_DitherFar_G");
+
+    static readonly int ID_CutoutEnable = Shader.PropertyToID("_WB_CutoutEnable_G");
+    static readonly int ID_CutoutRadius = Shader.PropertyToID("_WB_CutoutRadius_G");
+    static readonly int ID_CutoutFade = Shader.PropertyToID("_WB_CutoutFade_G");
+
+
+
+
 
     void OnEnable()
     {
@@ -112,6 +130,10 @@ public class WorldBendGlobalController : MonoBehaviour
         {
             Shader.DisableKeyword("_NEAR_DITHER_ON");
         }
+
+        Shader.SetGlobalFloat(ID_CutoutEnable, cutoutEnabled ? 1f : 0f);
+        Shader.SetGlobalFloat(ID_CutoutRadius, Mathf.Max(0f, cutoutRadius));
+        Shader.SetGlobalFloat(ID_CutoutFade, Mathf.Max(0f, cutoutFadeWidth));
 
         // Handle full bend disable
         if (disableBend)
@@ -210,5 +232,7 @@ public class WorldBendGlobalController : MonoBehaviour
         Shader.DisableKeyword("_EDGE_FADE_TRANSPARENT");
         Shader.DisableKeyword("_EDGE_FADE_DITHER");
         Shader.DisableKeyword("_NEAR_DITHER_ON");
+
+        Shader.SetGlobalFloat(ID_CutoutEnable, 0f);
     }
 }

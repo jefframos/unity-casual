@@ -272,7 +272,7 @@ public class LevelTrackerUiController : MonoBehaviour
         int count = _orderedRows.Count;
         if (count == 0) return;
 
-        float totalWidth = (count - 1) * trackerSpacing;
+        float totalWidth = (count) * trackerSpacing;
         float startX = -totalWidth * 0.5f;
 
         for (int i = 0; i < count; i++)

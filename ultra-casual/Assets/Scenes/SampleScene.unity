@@ -620,7 +620,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 246fb11fab76bc041a0f4c7e7a6cf407, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 958858880}
   m_SourcePrefab: {fileID: 100100000, guid: 246fb11fab76bc041a0f4c7e7a6cf407, type: 3}
 --- !u!4 &95339176 stripped
 Transform:
@@ -3181,7 +3184,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3075947457186349242, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1075417963}
   m_SourcePrefab: {fileID: 100100000, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
 --- !u!4 &563559726 stripped
 Transform:
@@ -3693,11 +3699,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   applyGlobally: 1
   applyGameModeOnly: 0
-  disableBend: 1
+  disableBend: 0
   bendGlobe: 0
   originTarget: {fileID: 1315918978}
   originOffset: {x: 0, y: 0, z: 0}
-  componentMask: {x: 0, y: 0, z: 1}
+  componentMask: {x: 1, y: 1, z: 1}
   useThisForwardAsAxis: 0
   fixedAxis: {x: 0, y: 0, z: 1}
   strength: 0.5
@@ -3705,8 +3711,8 @@ MonoBehaviour:
   maxYDrop: 50
   bendStart: 0
   bendEnd: 0
-  edgeFadeStartPct: 0.699
-  transparentBlend: 0
+  edgeFadeStartPct: 0.602
+  transparentBlend: 1
   trackingOffset: {x: 0, y: 0, z: 0}
   outlineColor: {r: 0, g: 0, b: 0, a: 1}
   outlineThickness: 0.087
@@ -3715,6 +3721,9 @@ MonoBehaviour:
   nearCameraDither: 0
   ditherNear: 2
   ditherFar: 10.3
+  cutoutEnabled: 1
+  cutoutRadius: 2
+  cutoutFadeWidth: 1.9
 --- !u!4 &645890731
 Transform:
   m_ObjectHideFlags: 0
@@ -4611,7 +4620,7 @@ Mesh:
     m_UVInfo: 0
   m_LocalAABB:
     m_Center: {x: 0, y: 0.0014672875, z: -0.1219151}
-    m_Extent: {x: 1282.7256, y: 33016.113, z: 1282.122}
+    m_Extent: {x: 1292.7256, y: 33278.613, z: 1292.122}
   m_MeshUsageFlags: 0
   m_CookingOptions: 30
   m_BakedConvexCollisionMesh: 
@@ -5786,6 +5795,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &958858877 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 246fb11fab76bc041a0f4c7e7a6cf407, type: 3}
+  m_PrefabInstance: {fileID: 95339175}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &958858880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 958858877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25a990bcbe106c8448edc80e943ffebf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ignoreCutout: 1
 --- !u!1 &962807102
 GameObject:
   m_ObjectHideFlags: 0
@@ -6619,6 +6646,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1645573420}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1075417960 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3075947457186349242, guid: e7999bdce1f900d4cac282adb4b28134, type: 3}
+  m_PrefabInstance: {fileID: 563559725}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1075417963
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1075417960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25a990bcbe106c8448edc80e943ffebf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ignoreCutout: 1
 --- !u!1 &1079783466
 GameObject:
   m_ObjectHideFlags: 0
@@ -8211,7 +8256,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ddbb67f966cd9ea4ab65da6b6c5b2f04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  editorTimeScale: 1
+  editorTimeScale: 1.25
 --- !u!4 &1261569652
 Transform:
   m_ObjectHideFlags: 0

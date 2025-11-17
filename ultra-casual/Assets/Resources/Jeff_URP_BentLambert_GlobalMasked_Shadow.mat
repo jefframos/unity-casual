@@ -12,7 +12,8 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _CUTOUTIGNORE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -29,9 +30,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _ColorSteps: 0
+    - _CutoutIgnore: 1
+    - _OutlineThickness: 0.03
+    - _ToonSteps: 3
     - _WB_BendGlobe: 0
     - _WB_DisableBend: 0
     m_Colors:
     - _BaseColor: {r: 0.764151, g: 0.764151, b: 0.764151, a: 1}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

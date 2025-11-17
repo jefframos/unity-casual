@@ -14,6 +14,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
         [Header(Outline)]
         _OutlineColor     ("Outline Color (per-material)", Color) = (0, 0, 0, 1)
         _OutlineThickness ("Outline Thickness (per-material)", Range(0, 0.1)) = 0.03
+
+        [Header(Cutout)]
+        [Toggle] _CutoutIgnore ("Ignore Global Camera Cutout", Float) = 0
     }
 
     SubShader
@@ -71,6 +74,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float  _ColorSteps;
                 float4 _OutlineColor;
                 float  _OutlineThickness;
+
+                // Per-material cutout override (0 = obey global, 1 = ignore cutout)
+                float  _CutoutIgnore;
             CBUFFER_END
 
             // -------- GLOBALS (driven by controller) --------
@@ -97,6 +103,11 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             // Global near-camera dither
             float  _WB_DitherNear_G;
             float  _WB_DitherFar_G;
+
+            // Global camera cutout
+            float  _WB_CutoutEnable_G; // 0/1
+            float  _WB_CutoutRadius_G; // world units on cylinder around camera->origin
+            float  _WB_CutoutFade_G;   // fade width (world units) at edge of radius
 
             struct Attributes
             {
@@ -201,7 +212,6 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float adCylinder = abs(dot(deltaMask, axisWS));
 
                 float3 horiz = deltaRaw;
-                // horiz.y = 0.0; // keep Y in distance as in your original forward
                 float adGlobe = length(horiz);
 
                 float tGlobe = saturate(_WB_BendGlobe);
@@ -273,6 +283,55 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 float alpha = baseCol.a;
 
+                // ----- CAMERA–PLAYER CUTOUT -----
+                // Uses _WB_Origin_G as "player/world origin", and _WorldSpaceCameraPos as camera.
+                if (_WB_CutoutEnable_G > 0.5 && _CutoutIgnore < 0.5 && _WB_CutoutRadius_G > 0.0)
+                {
+                    float3 camPos    = _WorldSpaceCameraPos;
+                    float3 playerPos = _WB_Origin_G.xyz;
+
+                    float3 camToPlayer = playerPos - camPos;
+                    float segLen = length(camToPlayer);
+
+                    if (segLen > 1e-4)
+                    {
+                        float3 segDir = camToPlayer / segLen;
+                        float3 camToFrag = IN.positionWS - camPos;
+                        float proj = dot(camToFrag, segDir);
+
+                        // Only affect fragments between camera and player
+                        if (proj > 0.0 && proj < segLen)
+                        {
+                            float3 closest = camPos + segDir * proj;
+                            float distToLine = distance(IN.positionWS, closest);
+
+                            float radius = _WB_CutoutRadius_G;
+                            float fade   = max(_WB_CutoutFade_G, 0.0);
+
+                            if (fade <= 0.0001)
+                            {
+                                if (distToLine < radius)
+                                    clip(-1.0);
+                            }
+                            else
+                            {
+                                float inner = max(0.0, radius - fade);
+
+                                if (distToLine < inner)
+                                {
+                                    clip(-1.0);
+                                }
+                                else if (distToLine < radius)
+                                {
+                                    float t = saturate((distToLine - inner) /
+                                                       max(radius - inner, 1e-4));
+                                    alpha *= t;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // ----- Environment edge fade -----
                 #if defined(_EDGE_FADE_TRANSPARENT)
                     {
@@ -303,7 +362,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                         float2 screenPosN = IN.positionCS.xy / IN.positionCS.w;
                         float2 pixelPosN  = screenPosN * _ScreenParams.xy;
-                        float ditherThresholdN = Dither4x4(pixelPosN + 2.37); // small offset
+                        float ditherThresholdN = Dither4x4(pixelPosN + 2.37);
 
                         clip(t - ditherThresholdN);
                         alpha *= t;
@@ -348,6 +407,8 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float  _ColorSteps;
                 float4 _OutlineColor;
                 float  _OutlineThickness;
+
+                float  _CutoutIgnore;
             CBUFFER_END
 
             float _WB_Strength_G;
@@ -372,6 +433,11 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             float  _WB_DitherNear_G;
             float  _WB_DitherFar_G;
 
+            // Cutout globals
+            float  _WB_CutoutEnable_G;
+            float  _WB_CutoutRadius_G;
+            float  _WB_CutoutFade_G;
+
             struct OutlineAttributes
             {
                 float4 positionOS : POSITION;
@@ -382,8 +448,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             struct OutlineVaryings
             {
                 float4 positionCS : SV_POSITION;
-                float  distAbs    : TEXCOORD0;
-                float  viewDepth  : TEXCOORD1;
+                float3 positionWS : TEXCOORD0;
+                float  distAbs    : TEXCOORD1;
+                float  viewDepth  : TEXCOORD2;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -441,6 +508,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 if (_WB_DisableBend > 0.5)
                 {
+                    OUT.positionWS = posWS;
                     OUT.positionCS = TransformWorldToHClip(posWS);
                     OUT.distAbs    = 0.0;
 
@@ -483,6 +551,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 sag = min(sag, maxDrop);
                 posWS.y -= sag * originFadeT;
 
+                OUT.positionWS = posWS;
                 OUT.positionCS = TransformWorldToHClip(posWS);
                 OUT.distAbs    = ad;
 
@@ -508,6 +577,53 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                     (_WB_OutlineColor_G.a != 0.0)
                         ? _WB_OutlineColor_G
                         : _OutlineColor;
+
+                // ----- CAMERA–PLAYER CUTOUT for outline -----
+                if (_WB_CutoutEnable_G > 0.5 && _CutoutIgnore < 0.5 && _WB_CutoutRadius_G > 0.0)
+                {
+                    float3 camPos    = _WorldSpaceCameraPos;
+                    float3 playerPos = _WB_Origin_G.xyz;
+
+                    float3 camToPlayer = playerPos - camPos;
+                    float segLen = length(camToPlayer);
+
+                    if (segLen > 1e-4)
+                    {
+                        float3 segDir = camToPlayer / segLen;
+                        float3 camToFrag = IN.positionWS - camPos;
+                        float proj = dot(camToFrag, segDir);
+
+                        if (proj > 0.0 && proj < segLen)
+                        {
+                            float3 closest = camPos + segDir * proj;
+                            float distToLine = distance(IN.positionWS, closest);
+
+                            float radius = _WB_CutoutRadius_G;
+                            float fade   = max(_WB_CutoutFade_G, 0.0);
+
+                            if (fade <= 0.0001)
+                            {
+                                if (distToLine < radius)
+                                    clip(-1.0);
+                            }
+                            else
+                            {
+                                float inner = max(0.0, radius - fade);
+
+                                if (distToLine < inner)
+                                {
+                                    clip(-1.0);
+                                }
+                                else if (distToLine < radius)
+                                {
+                                    float t = saturate((distToLine - inner) /
+                                                       max(radius - inner, 1e-4));
+                                    col.a *= t;
+                                }
+                            }
+                        }
+                    }
+                }
 
                 float edgeStart = _WB_Radius_G * saturate(_WB_EdgeFadeStartPct_G);
                 float alphaFade = 1.0;
@@ -554,7 +670,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
         }
 
         // ---------------------------------------------------------
-        // ShadowCaster
+        // ShadowCaster (unchanged by cutout to avoid light-camera issues)
         // ---------------------------------------------------------
         Pass
         {
