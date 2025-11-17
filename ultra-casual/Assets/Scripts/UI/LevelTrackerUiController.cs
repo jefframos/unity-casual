@@ -74,6 +74,7 @@ public class LevelTrackerUiController : MonoBehaviour
 
         levelTrackerMediator.OnSnapshotUpdated += HandleSnapshotUpdated;
         levelTrackerMediator.OnTrackersRefreshed += HandleTrackersRefreshed;
+        levelTrackerMediator.OnResetStarted += ResetLevel;
 
         // Ask mediator to push a snapshot so we can build initial UI
         levelTrackerMediator.ForceBroadcastSnapshot();
@@ -85,9 +86,29 @@ public class LevelTrackerUiController : MonoBehaviour
         {
             levelTrackerMediator.OnSnapshotUpdated -= HandleSnapshotUpdated;
             levelTrackerMediator.OnTrackersRefreshed -= HandleTrackersRefreshed;
+            levelTrackerMediator.OnResetStarted -= ResetLevel;
         }
 
         ClearAllRows();
+    }
+
+    // --------------------------------------------------
+    // Public API
+    // --------------------------------------------------
+
+    /// <summary>
+    /// Fully resets the level UI so a new level can start clean.
+    /// - Clears all rows & bars.
+    /// - Hides trophy.
+    /// - Resets current index and cached data.
+    /// </summary>
+    public void ResetLevel()
+    {
+        _currentIndex = -1;
+        _lastGradeData.Clear();
+        ClearAllRows();
+
+        Debug.Log("ResetLevel");
     }
 
     // --------------------------------------------------
@@ -96,8 +117,8 @@ public class LevelTrackerUiController : MonoBehaviour
 
     private void HandleTrackersRefreshed()
     {
-        _currentIndex = -1;
-        ClearAllRows();
+        // New level / trackers coming in: reset everything.
+        ResetLevel();
     }
 
     private bool HasGradeDataChanged(List<GradeViewData> current)
@@ -303,8 +324,6 @@ public class LevelTrackerUiController : MonoBehaviour
             var bar = GetBar();
             if (bar == null) continue;
 
-
-            bar.SetInstantFill(0f);
             var brt = bar.RectTransform;
             brt.anchorMin = brt.anchorMax = new Vector2(0.5f, 0.5f);
             brt.pivot = new Vector2(0.5f, 0.5f);

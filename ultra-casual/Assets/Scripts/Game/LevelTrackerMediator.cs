@@ -45,6 +45,7 @@ public class LevelTrackerMediator : MonoBehaviour
     /// Provides the new snapshot after advancing.
     /// </summary>
     public event Action<LevelEnemyTracker.LevelSnapshot> OnAdvancedStep;
+    public event Action OnResetStarted;
 
     // All level trackers currently known
     private readonly List<LevelEnemyTracker> _trackers = new List<LevelEnemyTracker>();
@@ -146,6 +147,7 @@ public class LevelTrackerMediator : MonoBehaviour
     /// </summary>
     public void RefreshLevels()
     {
+
         UnhookAllTrackers();
         _trackers.Clear();
         _currentTracker = null;
@@ -196,8 +198,15 @@ public class LevelTrackerMediator : MonoBehaviour
         {
             OnTrackersRefreshed.Invoke();
         }
+
+
     }
 
+    public void StartNewLevel()
+    {
+        OnResetStarted?.Invoke();
+
+    }
     /// <summary>
     /// Returns the current level snapshot (a copy) from the active tracker.
     /// If no tracker is active, returns null.
@@ -357,6 +366,7 @@ public class LevelTrackerMediator : MonoBehaviour
 
     private void OnAllStepsCompleted()
     {
+
         if (!autoBroadcastSnapshot)
         {
             return;

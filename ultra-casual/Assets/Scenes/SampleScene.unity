@@ -609,6 +609,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 246fb11fab76bc041a0f4c7e7a6cf407, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 9579d49bf4afa2342a0ba629c0c33cd8, type: 2}
     - target: {fileID: 919132149155446097, guid: 246fb11fab76bc041a0f4c7e7a6cf407, type: 3}
       propertyPath: m_Name
       value: Cubie
@@ -4367,7 +4371,7 @@ Mesh:
     m_UVInfo: 0
   m_LocalAABB:
     m_Center: {x: 0, y: 0.0014672875, z: -0.1219151}
-    m_Extent: {x: 1200.7256, y: 30863.615, z: 1200.122}
+    m_Extent: {x: 1232.7256, y: 31703.615, z: 1232.122}
   m_MeshUsageFlags: 0
   m_CookingOptions: 30
   m_BakedConvexCollisionMesh: 
@@ -10619,7 +10623,7 @@ MonoBehaviour:
   assignFollowTargets: 1
   customLookAt: {fileID: 0}
   slingshotComponent: {fileID: 1797136026}
-  CurrentMode: 1
+  CurrentMode: 0
 --- !u!1 &1670980934
 GameObject:
   m_ObjectHideFlags: 0
@@ -12766,17 +12770,17 @@ MonoBehaviour:
   maxPullDistance: 18
   movementStartLimit: {fileID: 1909786370}
   movementEndYLimit: {fileID: 942681803}
-  minPullDistance: 0.25
-  capWithinPoles: 0
-  polesEndInset: 0.05
+  minPullDistance: 1
+  capWithinPoles: 1
+  polesEndInset: -1
   impulsePerMeter: 10
   minImpulse: 30
   maxImpulse: 50
-  maxYawAtFullPull: 80
+  maxYawAtFullPull: 90
   minLaunchAngleDeg: -5
   maxLaunchAngleDeg: -50
   maxDownPullForMaxAngle: 2
-  forceMultiplierAtMinAngle: 0.5
+  forceMultiplierAtMinAngle: 1
   forceMultiplierAtMaxAngle: 1
   enableCollisionPreview: 0
   previewLayers:
@@ -15683,7 +15687,7 @@ Transform:
   m_GameObject: {fileID: 2021426119}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 30}
+  m_LocalPosition: {x: 0, y: 0, z: 35}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

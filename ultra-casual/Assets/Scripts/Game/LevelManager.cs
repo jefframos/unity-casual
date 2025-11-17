@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
+using DG.Tweening;
 
 public class LevelManager : MonoBehaviour
 {
@@ -182,6 +183,8 @@ public class LevelManager : MonoBehaviour
         instance.transform.localRotation = Quaternion.identity;
         //instance.transform.localScale = Vector3.one;
 
+        await instance.transform.DOScale(instance.transform.localScale * 0.95f, 0.25f).From().SetEase(Ease.OutBack).AsyncWaitForCompletion();
+
         CurrentAreaIndex = areaIndex;
         CurrentLevelIndexInArea = levelIndexInArea;
         CurrentGlobalLevelIndex = globalIndex;
@@ -191,6 +194,7 @@ public class LevelManager : MonoBehaviour
         RebuildResettableCache();
         ResetAll();
         LevelTrackerMediator.Instance?.RefreshLevels();
+        LevelTrackerMediator.Instance?.StartNewLevel();
 
         // Fire event hook
         var info = new LevelSpawnInfo
