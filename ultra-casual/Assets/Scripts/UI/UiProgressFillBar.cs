@@ -45,6 +45,10 @@ public class UiLevelProgressFillBar : MonoBehaviour
         EnsureInitialized();
     }
 
+    public void SetColor(Color color)
+    {
+        fillImage.color = color;
+    }
     private void EnsureInitialized()
     {
         if (fillImage != null && _fillRect == null)
@@ -148,7 +152,7 @@ public class UiLevelProgressFillBar : MonoBehaviour
         _tween?.Kill();
         _tween = _fillRect
             .DOSizeDelta(new Vector2(targetWidth, startSize.y), duration)
-            .SetEase(Ease.Linear)
+            .SetEase(Ease.InOutCubic)
             .OnUpdate(() =>
             {
                 // Keep following the control’s position/height while animating

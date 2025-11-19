@@ -147,8 +147,7 @@ public class GameManager : MonoBehaviour
     /// <summary>End the current run.</summary>
     public void EndGame()
     {
-        levelManager.EndLevel();
-        Debug.Log(levelManager.LastRunCompletedLevel);
+
         _gameController?.EndGame();
 
 
@@ -207,6 +206,9 @@ public class GameManager : MonoBehaviour
     {
         try
         {
+
+            var snapshot = levelManager.EndLevel();
+
             EndGame();
 
             var endGameOrchestrator = FindObjectsByType<EndGameOrchestrator>(FindObjectsSortMode.None)
@@ -230,6 +232,45 @@ public class GameManager : MonoBehaviour
                     token
                 );
             }
+
+            Debug.Log(levelManager.LastRunCompletedLevel);
+            if (levelManager.LastRunCompletedLevel)
+            {
+                Debug.LogWarning("SHOW END LEVEL HERE");
+                Debug.Log($"[LevelManager] Total killed so far: {snapshot.totalDead}/{snapshot.totalEnemies}");
+                foreach (var g in snapshot.grades)
+                {
+                    Debug.Log($"[LevelManager] Grade {g.grade}: {g.dead}/{g.total} dead (current: {g.isCurrent})");
+                }
+
+                var nextLevelOrchestrator = FindObjectsByType<NextLevelOrchestrator>(FindObjectsSortMode.None)
+    .FirstOrDefault();
+
+                if (nextLevelOrchestrator != null)
+                {
+                    int fromLevel = 2;
+                    int toLevel = 3;
+
+                    float giftFill = 1.0f;        // 0..1
+                    bool giftIsFull = true;       // you decide
+
+                    await nextLevelOrchestrator.OrchestrateNextLevelAsync(
+                        fromLevel,
+                        toLevel,
+                        giftFill,
+                        giftIsFull,
+                        onClaimGift: async () =>
+                        {
+                            // TODO: put your async gift logic here
+                            // e.g. await giftChestOrchestrator.OpenAsync();
+                            await UniTask.Yield();
+                        }
+                    );
+
+                    //nextLevelOrchestrator.hideFlags
+                }
+            }
+
 
             await StartGame();
         }

@@ -42,7 +42,6 @@ public class EnemyAppearingOrchestrator : MonoBehaviour
         }
 
         const float popDuration = 0.25f;   // tweak as you like
-        const float popOvershoot = 1.1f;   // slight overshoot for a nicer pop
 
         try
         {

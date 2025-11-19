@@ -283,7 +283,7 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    internal void EndLevel()
+    internal LevelEnemyTracker.LevelSnapshot EndLevel()
     {
         LastRunCompletedLevel = false;
 
@@ -291,21 +291,17 @@ public class LevelManager : MonoBehaviour
         if (mediator == null)
         {
             Debug.LogWarning("LevelManager.EndLevel: No LevelTrackerMediator.Instance in scene.");
-            return;
+            return null;
         }
 
         var snapshot = mediator.GetSnapshot();
         if (snapshot == null)
         {
             Debug.LogWarning("LevelManager.EndLevel: Snapshot is null (no active tracker?).");
-            return;
+            return null;
         }
 
-        Debug.Log($"[LevelManager] Total killed so far: {snapshot.totalDead}/{snapshot.totalEnemies}");
-        foreach (var g in snapshot.grades)
-        {
-            Debug.Log($"[LevelManager] Grade {g.grade}: {g.dead}/{g.total} dead (current: {g.isCurrent})");
-        }
+
 
         bool anyEnemies = snapshot.totalEnemies > 0;
         bool allDead = anyEnemies && snapshot.totalDead == snapshot.totalEnemies;
@@ -317,11 +313,16 @@ public class LevelManager : MonoBehaviour
         if (levelCompleted)
         {
             Debug.Log("[LevelManager] Level COMPLETED.");
+            mediator.ShowMoveEnd();
+
         }
         else
         {
             Debug.Log("[LevelManager] Level NOT completed yet (either more enemies or more steps exist).");
+            mediator.ShowMoveEnd();
         }
+
+        return snapshot;
     }
 
     public void StartGame()

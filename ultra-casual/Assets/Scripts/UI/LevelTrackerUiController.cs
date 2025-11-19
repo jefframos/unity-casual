@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 using Cysharp.Threading.Tasks;
+using System.Data.Common;
 
 /// <summary>
 /// Pure UI: subscribes to LevelTrackerMediator and builds/updates labels.
@@ -22,13 +23,16 @@ public class LevelTrackerUiController : MonoBehaviour
     public UiLevelProgressFillBar progressBarPrefab;
 
     [Tooltip("Prefab shown after the final grade (e.g. trophy).")]
-    public RectTransform trophyPrefab;
+    public TrophyTracker trophyPrefab;
 
     [Tooltip("Mediator that provides level snapshots.")]
     public LevelTrackerMediator levelTrackerMediator;
 
     [Header("Layout")]
     [Tooltip("Horizontal spacing between trackers (in local units).")]
+    public float maxTrackerMax = 350f;
+    public float trackerMax = 350f;
+    public float maxTrackerSpacing = 150f;
     public float trackerSpacing = 150f;
 
     [Tooltip("Duration of fill tween for the current grade.")]
@@ -49,13 +53,18 @@ public class LevelTrackerUiController : MonoBehaviour
     private readonly Stack<UiLevelProgressFillBar> _barPool = new();
 
     // trophy instance
-    private RectTransform _trophyInstance;
+    private TrophyTracker _trophyInstance;
 
     // which tracker index is currently "active" in progression terms
+    // 0..N-1 = that grade index is active, N = trophy
     private int _currentIndex = -1;
 
     // cache of the last grade data to avoid redundant rebuilds/animations
     private List<GradeViewData> _lastGradeData = new List<GradeViewData>();
+
+    // NEW: did we already build UI at least once for this level?
+    private bool _hasSnapshotForThisLevel = false;
+
 
     // small struct to keep only the data we need per grade
     private struct GradeViewData
@@ -72,7 +81,7 @@ public class LevelTrackerUiController : MonoBehaviour
             return;
         }
 
-        levelTrackerMediator.OnSnapshotUpdated += HandleSnapshotUpdated;
+        levelTrackerMediator.OnMoveEnded += HandleSnapshotUpdated;
         levelTrackerMediator.OnTrackersRefreshed += HandleTrackersRefreshed;
         levelTrackerMediator.OnResetStarted += ResetLevel;
 
@@ -84,7 +93,7 @@ public class LevelTrackerUiController : MonoBehaviour
     {
         if (levelTrackerMediator != null)
         {
-            levelTrackerMediator.OnSnapshotUpdated -= HandleSnapshotUpdated;
+            levelTrackerMediator.OnMoveEnded -= HandleSnapshotUpdated;
             levelTrackerMediator.OnTrackersRefreshed -= HandleTrackersRefreshed;
             levelTrackerMediator.OnResetStarted -= ResetLevel;
         }
@@ -106,7 +115,15 @@ public class LevelTrackerUiController : MonoBehaviour
     {
         _currentIndex = -1;
         _lastGradeData.Clear();
+        _hasSnapshotForThisLevel = false;
+
         ClearAllRows();
+        ClearAllBars();
+
+        if (_trophyInstance != null)
+        {
+            _trophyInstance.gameObject.SetActive(false);
+        }
 
         Debug.Log("ResetLevel");
     }
@@ -192,39 +209,53 @@ public class LevelTrackerUiController : MonoBehaviour
         // Sort by grade enum value
         gradeData.Sort((a, b) => ((int)a.grade).CompareTo((int)b.grade));
 
-        // 🔍 Detect if this looks like the *start of a fresh level*
-        bool isFreshLevelStart = true;
-        for (int i = 0; i < gradeData.Count; i++)
-        {
-            if (gradeData[i].dead > 0)
-            {
-                isFreshLevelStart = false;
-                break;
-            }
-        }
+        bool isFirstSnapshotForThisLevel = !_hasSnapshotForThisLevel;
 
-        // 🔍 Early-out if nothing changed in data
-        if (!HasGradeDataChanged(gradeData))
+        // Early-out if nothing changed AND this is not our first snapshot for this level
+        if (!isFirstSnapshotForThisLevel && !HasGradeDataChanged(gradeData))
         {
             return;
         }
 
-        // Cache the new data (make a copy)
+        // Cache new data and mark that this level now has an active snapshot
         _lastGradeData = new List<GradeViewData>(gradeData);
+        _hasSnapshotForThisLevel = true;
 
-        // From here on, we know there *was* a change
-        ClearAllRows();
-
-        // ✅ FIX: ensure current index is valid for this snapshot
-        // - Reset if it was never set
-        // - Reset if it came from a previous level and is out of range
-        // - Reset if this snapshot looks like a brand-new level (all dead == 0)
-        if (_currentIndex < 0 || _currentIndex >= gradeData.Count || isFreshLevelStart)
+        // Decide which grade is "current" from this snapshot:
+        // latest index that has any progress (dead > 0). If none, default to 0.
+        int latestProgressIndex = 0;
+        bool foundProgress = false;
+        for (int i = 0; i < gradeData.Count; i++)
         {
-            _currentIndex = 0;
+            if (gradeData[i].dead > 0)
+            {
+                latestProgressIndex = i;
+                foundProgress = true;
+            }
+        }
+        if (!foundProgress)
+        {
+            latestProgressIndex = 0;
         }
 
-        // Create rows in order & set states
+        if (isFirstSnapshotForThisLevel)
+        {
+            // First time UI appears for this level:
+            // current index is the grade where we have latest progress.
+            _currentIndex = Mathf.Clamp(latestProgressIndex, 0, gradeData.Count - 1);
+        }
+        else
+        {
+            // Subsequent snapshots: keep current index but clamp to valid range.
+            if (_currentIndex < 0 || _currentIndex > gradeData.Count)
+            {
+                _currentIndex = Mathf.Clamp(_currentIndex, 0, gradeData.Count);
+            }
+        }
+
+        // Rebuild rows
+        ClearAllRows();
+
         for (int i = 0; i < gradeData.Count; i++)
         {
             var data = gradeData[i];
@@ -247,7 +278,6 @@ public class LevelTrackerUiController : MonoBehaviour
             }
             else
             {
-                // Future grades: hidden/locked look
                 row.SetState(UiLevelTrackerState.Hidden);
             }
         }
@@ -258,8 +288,128 @@ public class LevelTrackerUiController : MonoBehaviour
         // Create/update progress bars between trackers (including last -> trophy)
         BuildProgressBars();
 
-        // Apply bar fill (with tween on the current bar)
-        await UpdateProgressBarsAsync(gradeData);
+        if (isFirstSnapshotForThisLevel)
+        {
+            // FIRST TIME THIS LEVEL:
+            // - bars before current grade: instantly full
+            // - current grade bar: animate 0 -> current fraction
+            // - bars after: 0
+            ApplyInitialStaticBars(gradeData);
+            await AnimateInitialCurrentBarAsync(gradeData);
+        }
+        else
+        {
+            // LATER UPDATES:
+            // Only animate the current bar forward from its existing fill,
+            // and let OnBarReachedFull handle stepping when it hits 100%.
+            await UpdateProgressBarsAsync(gradeData);
+        }
+    }
+    /// <summary>
+    /// First-snapshot path: animate ONLY the current grade bar from 0 to its
+    /// current fraction, without advancing to the next grade (no OnBarReachedFull).
+    /// </summary>
+    private async UniTask AnimateInitialCurrentBarAsync(List<GradeViewData> gradeData)
+    {
+        if (_currentIndex < 0 ||
+            _currentIndex >= gradeData.Count ||
+            _currentIndex >= _progressBars.Count)
+        {
+            return;
+        }
+
+        var token = this.GetCancellationTokenOnDestroy();
+
+        var bar = _progressBars[_currentIndex];
+        if (bar == null)
+        {
+            return;
+        }
+
+        var data = gradeData[_currentIndex];
+
+        float targetFill = (data.total > 0)
+            ? Mathf.Clamp01((float)data.dead / data.total)
+            : 0f;
+
+        // No progress? nothing to animate
+        if (targetFill <= 0f)
+        {
+            bar.SetInstantFill(0f);
+            return;
+        }
+
+        var dataView = EnemyTypeDatabase.Instance.GetDefinition(data.grade);
+        if (dataView)
+        {
+            bar.SetColor(dataView.color);
+        }
+
+        // Start from 0 (already enforced in ApplyInitialStaticBars).
+        // IMPORTANT: onCompleted is null, so we DO NOT call OnBarReachedFull
+        // and we do NOT auto-advance to the next grade on this intro animation.
+
+        bool reachFull = targetFill >= 0.999f;
+
+        await bar.AnimateToAsync(
+            targetFill,
+            fillTweenDuration,
+            onCompleted: reachFull ? () => OnBarReachedFull(_currentIndex) : null,
+            ct: token
+        );
+
+        // await bar.AnimateToAsync(
+        //     targetFill,
+        //     fillTweenDuration,
+        //     onCompleted: null,
+        //     ct: token
+        // );
+    }
+
+    /// <summary>
+    /// First-snapshot path: instantly set all bars EXCEPT the current one
+    /// to their correct static state (previous = full, future = empty).
+    /// The current bar will be animated separately from 0 in AnimateInitialCurrentBarAsync.
+    /// </summary>
+    private void ApplyInitialStaticBars(List<GradeViewData> gradeData)
+    {
+        if (_progressBars.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _progressBars.Count && i < gradeData.Count; i++)
+        {
+            var bar = _progressBars[i];
+            if (bar == null)
+            {
+                continue;
+            }
+
+            var data = gradeData[i];
+
+            var dataView = EnemyTypeDatabase.Instance.GetDefinition(data.grade);
+            if (dataView)
+            {
+                bar.SetColor(dataView.color);
+            }
+
+            if (i < _currentIndex)
+            {
+                // previous grades are already done
+                bar.SetInstantFill(1f);
+            }
+            else if (i > _currentIndex)
+            {
+                // future grades: empty
+                bar.SetInstantFill(0f);
+            }
+            else
+            {
+                // current grade: force to 0 now, will animate from 0 in AnimateInitialCurrentBarAsync
+                bar.SetInstantFill(0f);
+            }
+        }
     }
 
 
@@ -270,29 +420,48 @@ public class LevelTrackerUiController : MonoBehaviour
     private void LayoutTrackers()
     {
         int count = _orderedRows.Count;
-        if (count == 0) return;
+        if (count == 0)
+        {
+            return;
+        }
 
-        float totalWidth = (count) * trackerSpacing;
+        int gaps = Mathf.Max(0, count);
+
+        float spacing = gaps > 0 ? trackerMax / gaps : 0f;
+
+        if (spacing > maxTrackerSpacing)
+        {
+            spacing = maxTrackerSpacing;
+        }
+
+        trackerSpacing = spacing;
+
+        float totalWidth = gaps * spacing;
         float startX = -totalWidth * 0.5f;
 
         for (int i = 0; i < count; i++)
         {
             var rt = _orderedRows[i].transform as RectTransform;
-            if (rt == null) continue;
+            if (rt == null)
+            {
+                continue;
+            }
 
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2(startX + i * trackerSpacing, 0f);
+
+            rt.anchoredPosition = new Vector2(startX + i * spacing, 0f);
             rt.localScale = Vector3.one;
         }
     }
 
     private void BuildProgressBars()
     {
-        ClearAllBars();
-
         int count = _orderedRows.Count;
-        if (count == 0) return;
+        if (count == 0)
+        {
+            return;
+        }
 
         // Ensure / position trophy
         RectTransform trophyRt = null;
@@ -302,8 +471,9 @@ public class LevelTrackerUiController : MonoBehaviour
             {
                 _trophyInstance = Instantiate(trophyPrefab, container);
             }
+            _trophyInstance.SetState(UiLevelTrackerState.Active);
 
-            trophyRt = _trophyInstance;
+            trophyRt = _trophyInstance.GetComponent<RectTransform>();
             trophyRt.gameObject.SetActive(true);
 
             trophyRt.anchorMin = trophyRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -315,11 +485,42 @@ public class LevelTrackerUiController : MonoBehaviour
             trophyRt.localScale = Vector3.one;
         }
 
-        // One bar per grade:
-        // bar i connects row[i] -> row[i+1] for i < count - 1
-        // and row[last] -> trophy for i == count - 1 (if trophy exists)
-        for (int i = 0; i < count; i++)
+        int neededBars = count;
+
+        while (_progressBars.Count > neededBars)
         {
+            var lastBar = _progressBars[_progressBars.Count - 1];
+            if (lastBar != null)
+            {
+                lastBar.gameObject.SetActive(false);
+                lastBar.SetInstantFill(0f);
+                _barPool.Push(lastBar);
+            }
+            _progressBars.RemoveAt(_progressBars.Count - 1);
+        }
+
+        while (_progressBars.Count < neededBars)
+        {
+            var newBar = GetBar();
+            if (newBar != null)
+            {
+                _progressBars.Add(newBar);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // Position all active bars (do NOT reset fill here)
+        for (int i = 0; i < _progressBars.Count && i < count; i++)
+        {
+            var bar = _progressBars[i];
+            if (bar == null)
+            {
+                continue;
+            }
+
             var start = (RectTransform)_orderedRows[i].transform;
             RectTransform end;
 
@@ -329,18 +530,14 @@ public class LevelTrackerUiController : MonoBehaviour
             }
             else
             {
-                // last grade -> trophy
-                end = trophyRt;
+                end = trophyRt; // last grade -> trophy
             }
 
             if (end == null)
             {
-                // No valid endpoint (e.g. no trophy assigned) -> skip last bar
+                bar.gameObject.SetActive(false);
                 continue;
             }
-
-            var bar = GetBar();
-            if (bar == null) continue;
 
             var brt = bar.RectTransform;
             brt.anchorMin = brt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -350,22 +547,51 @@ public class LevelTrackerUiController : MonoBehaviour
             brt.anchoredPosition = new Vector2(midX, 0f);
             brt.localScale = Vector3.one;
 
-            // Adjust width based on distance between start and end
             float dx = Mathf.Abs(end.anchoredPosition.x - start.anchoredPosition.x);
             var size = brt.sizeDelta;
-            size.x = dx * 0.7f; // tweak factor to taste
+            size.x = dx * 0.7f;
             brt.sizeDelta = size;
 
-            // Bar is always visible; just reset the fill
-            bar.SetInstantFill(0f);
+            bar.gameObject.SetActive(true);
+        }
+    }
 
-            _progressBars.Add(bar);
+    /// <summary>
+    /// First-snapshot path: snap bars directly to target fill from snapshot,
+    /// no animation, so mid-level UI doesn't replay from zero.
+    /// </summary>
+    private void ApplyInitialBarFill(List<GradeViewData> gradeData)
+    {
+        if (_progressBars.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _progressBars.Count && i < gradeData.Count; i++)
+        {
+            var bar = _progressBars[i];
+            var data = gradeData[i];
+
+            var dataView = EnemyTypeDatabase.Instance.GetDefinition(data.grade);
+            if (dataView)
+            {
+                bar.SetColor(dataView.color);
+            }
+
+            float targetFill = (data.total > 0)
+                ? Mathf.Clamp01((float)data.dead / data.total)
+                : 0f;
+
+            bar.SetInstantFill(targetFill);
         }
     }
 
     private async UniTask UpdateProgressBarsAsync(List<GradeViewData> gradeData)
     {
-        if (_progressBars.Count == 0) return;
+        if (_progressBars.Count == 0)
+        {
+            return;
+        }
 
         var token = this.GetCancellationTokenOnDestroy();
 
@@ -374,6 +600,12 @@ public class LevelTrackerUiController : MonoBehaviour
         {
             var bar = _progressBars[i];
             var data = gradeData[i];
+
+            var dataView = EnemyTypeDatabase.Instance.GetDefinition(data.grade);
+            if (dataView)
+            {
+                bar.SetColor(dataView.color);
+            }
 
             float targetFill = (data.total > 0)
                 ? Mathf.Clamp01((float)data.dead / data.total)
@@ -389,7 +621,6 @@ public class LevelTrackerUiController : MonoBehaviour
             {
                 if (targetFill <= bar.CurrentFill + 0.0001f)
                 {
-                    // no forward movement -> just clamp
                     bar.SetInstantFill(targetFill);
                 }
                 else
@@ -418,21 +649,31 @@ public class LevelTrackerUiController : MonoBehaviour
     /// </summary>
     private void OnBarReachedFull(int barIndex)
     {
-        // Only advance if this bar is the current one
+        Debug.LogWarning("OnBarReachedFull");
         if (barIndex != _currentIndex)
+        {
             return;
+        }
+
+
+        Debug.LogWarning("OnBarReachedFull2");
 
         int currentTrackerIndex = barIndex;
         int nextTrackerIndex = barIndex + 1;
 
-        // Mark current tracker as completed
+        if (currentTrackerIndex >= _orderedRows.Count - 1)
+        {
+            if (_trophyInstance != null)
+            {
+                _trophyInstance.SetState(UiLevelTrackerState.Completed);
+            }
+        }
+
         if (currentTrackerIndex >= 0 && currentTrackerIndex < _orderedRows.Count)
         {
             _orderedRows[currentTrackerIndex].SetState(UiLevelTrackerState.Completed);
         }
 
-        // If there is a next tracker, activate it.
-        // If nextTrackerIndex == _orderedRows.Count, we're at the trophy: level fully completed.
         if (nextTrackerIndex >= 0 && nextTrackerIndex < _orderedRows.Count)
         {
             _orderedRows[nextTrackerIndex].SetState(UiLevelTrackerState.Active);
@@ -445,10 +686,6 @@ public class LevelTrackerUiController : MonoBehaviour
     // Pool + row helpers
     // --------------------------------------------------
 
-    /// <summary>
-    /// Clears all active rows (returns them to the pool) and bars.
-    /// Does NOT destroy pooled instances.
-    /// </summary>
     private void ClearAllRows()
     {
         foreach (var kvp in _rows)
@@ -462,13 +699,6 @@ public class LevelTrackerUiController : MonoBehaviour
         _rows.Clear();
         _orderedRows.Clear();
         _orderedGrades.Clear();
-
-        ClearAllBars();
-
-        if (_trophyInstance != null)
-        {
-            _trophyInstance.gameObject.SetActive(false);
-        }
     }
 
     private void ClearAllBars()
@@ -495,7 +725,6 @@ public class LevelTrackerUiController : MonoBehaviour
             row = _pool.Pop();
             if (row == null)
             {
-                // In case something external destroyed the pooled object.
                 return InstantiateRow();
             }
         }
@@ -504,7 +733,6 @@ public class LevelTrackerUiController : MonoBehaviour
             row = InstantiateRow();
         }
 
-        // Ensure it is correctly parented and active
         var t = row.transform as RectTransform;
         if (t != null && container != null)
         {
@@ -523,9 +751,6 @@ public class LevelTrackerUiController : MonoBehaviour
             return;
         }
 
-        row.gameObject.SetActive(false);
-
-        // Keep them under the same container, just inactive.
         if (container != null)
         {
             row.transform.SetParent(container, false);

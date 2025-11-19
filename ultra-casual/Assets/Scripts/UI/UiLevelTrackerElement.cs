@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +24,9 @@ public class UiLevelTrackerElement : MonoBehaviour
     public Image icon;
     public Image checker;
     public Transform counterContainer;
+    public Transform disabledContainer;
+
+    private UiLevelTrackerState currentState = UiLevelTrackerState.Inactive;
 
     public void SetGrade(EnemyGrade grade)
     {
@@ -30,6 +34,8 @@ public class UiLevelTrackerElement : MonoBehaviour
         _grade = grade;
         backShape.color = _enemyTypeDefinition.color;
         icon.sprite = _enemyTypeDefinition.icon;
+        transform.localScale = Vector3.one;
+        //currentState = UiLevelTrackerState.Inactive;
     }
 
     public void UpdateCounts(EnemyGrade type, int dead, int total)
@@ -53,6 +59,30 @@ public class UiLevelTrackerElement : MonoBehaviour
     // NEW: you can keep this empty or swap graphics based on state later
     public void SetState(UiLevelTrackerState state)
     {
-        // TODO: change visuals based on state (Hidden / Active / Completed)
+        if (currentState == state)
+        {
+            return;
+        }
+        if (state == UiLevelTrackerState.Hidden)
+        {
+            disabledContainer.gameObject.SetActive(true);
+            counterContainer.gameObject.SetActive(false);
+
+        }
+        else if (state == UiLevelTrackerState.Completed)
+        {
+            disabledContainer.gameObject.SetActive(false);
+            transform.DOKill();
+            transform.localScale = Vector3.one;
+
+            transform.DOScale(Vector3.one * 1.1f, 0.75f).SetEase(Ease.OutBack);
+        }
+        else if (state == UiLevelTrackerState.Active)
+        {
+            disabledContainer.gameObject.SetActive(false);
+            transform.DOKill();
+            transform.localScale = Vector3.one;
+            transform.DOScale(Vector3.one * 0.75f, 0.75f).From().SetEase(Ease.OutBack);
+        }
     }
 }

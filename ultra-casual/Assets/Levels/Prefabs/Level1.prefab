@@ -86,6 +86,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rigidbodies: []
   autoCollectFromChildren: 1
+  autoCreateTrigger: 1
+  triggerPaddingExt: {x: 5, y: 5, z: 5}
+  playerTag: Player
   _resettablesDebug: []
 --- !u!114 &6204108524111695098
 MonoBehaviour:

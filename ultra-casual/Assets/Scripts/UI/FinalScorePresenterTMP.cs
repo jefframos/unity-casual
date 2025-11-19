@@ -72,7 +72,7 @@ public class FinalScorePresenterTMP : FinalScorePresenter
     }
     public override void ShowHighscore(float score)
     {
-        newHighScore.SetActive(true);
+        //newHighScore.SetActive(true);
     }
 
     public override async UniTask ShowFinalScoreAsync(float score, CancellationToken token)

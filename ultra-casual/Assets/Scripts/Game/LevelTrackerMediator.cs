@@ -38,6 +38,7 @@ public class LevelTrackerMediator : MonoBehaviour
     /// Includes per-grade totals, total killed so far,
     /// what grades exist, and whether it CAN progress to next step.
     /// </summary>
+    public event Action<LevelEnemyTracker.LevelSnapshot> OnMoveEnded;
     public event Action<LevelEnemyTracker.LevelSnapshot> OnSnapshotUpdated;
 
     /// <summary>
@@ -252,6 +253,11 @@ public class LevelTrackerMediator : MonoBehaviour
         }
 
         return true;
+    }
+
+    public void ShowMoveEnd()
+    {
+        OnMoveEnded?.Invoke(_lastSnapshot);
     }
 
     [ContextMenu("Force Broadcast Snapshot")]
