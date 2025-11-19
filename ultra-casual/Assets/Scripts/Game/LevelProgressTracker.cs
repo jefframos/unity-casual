@@ -106,7 +106,8 @@ public class LevelProgressTracker : MonoBehaviour
         }
 
 
-        OnRunEnded?.Invoke(finalDistance);
+        //OnRunEnded?.Invoke(finalDistance);
+        OnRunEnded?.Invoke(motionTracker.DistanceTravelled);
 
         // Optional: notify GameManager that a run ended
         // (You can call EndGame or transition state here if desired)

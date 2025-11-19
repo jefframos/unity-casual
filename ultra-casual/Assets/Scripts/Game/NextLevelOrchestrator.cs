@@ -41,6 +41,10 @@ public class NextLevelOrchestrator : MonoBehaviour
 
     public bool IsBusy { get; private set; }
 
+    void Awake()
+    {
+        rootCanvasGroup.alpha = 0;
+    }
     /// <summary>
     /// Orchestrates the "Next Level" UI.
     /// Example: fromLevel = 2, toLevel = 3.

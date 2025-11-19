@@ -15,6 +15,7 @@ public class GameplayUIBridge : MonoBehaviour
 
     [Header("UI")]
     public TextMeshProUGUI distanceText;
+    public TextMeshProUGUI travelText;
 
     [Tooltip("Optional progress slider (0..bestDistance). Leave null to ignore.")]
     public ProgressMarker distanceSlider;
@@ -66,11 +67,12 @@ public class GameplayUIBridge : MonoBehaviour
             // OnNewRecord optional for confetti/VFX
             _wiredToProgress = true;
         }
-        else if (motionTracker != null)
+        // else 
+        if (motionTracker != null)
         {
             motionTracker.DistanceChanged += HandleDistanceChanged_Fallback;
-            motionTracker.TotalDistanceChanged += TotalDistanceChanged;
-            motionTracker.Stopped += HandleStopped_Fallback;
+            //  motionTracker.TotalDistanceChanged += TotalDistanceChanged;
+            //motionTracker.Stopped += HandleStopped_Fallback;
             // For fallback start visibility, try current state:
             if (autoHideWhenIdle) SetVisible(motionTracker.IsTracking);
             _wiredToMotion = true;
@@ -142,9 +144,23 @@ public class GameplayUIBridge : MonoBehaviour
         }
     }
 
-    private void HandleDistanceChanged_Fallback(float cumulative, float delta)
+    private void HandleDistanceChanged_Fallback(float meters, float delta)
     {
+        if (!travelText)
+        {
+            return;
+        }
+        string formatted;
+        try
+        {
+            formatted = string.IsNullOrEmpty(distanceFormat) ? meters.ToString("0.0") : string.Format(distanceFormat, meters);
+        }
+        catch
+        {
+            formatted = meters.ToString("0.0");
+        }
 
+        travelText.text = formatted;
     }
 
     private void HandleStopped_Fallback(float final, float delta)
