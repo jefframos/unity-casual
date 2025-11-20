@@ -12,23 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41325b2536c1f3a40bf5986b13cdf08d, type: 3}
   m_Name: LevelGridData 1
   m_EditorClassIdentifier: 
-  levelName: Shape1
+  levelName: Level1-0
   gridSize: {x: 8, y: 11}
   cellSize: 1
   depth: 1
   placed:
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 2, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
-    origin: {x: 5, y: 0}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}
-    origin: {x: 3, y: 2}
-    layerZ: 0
-  - def: {fileID: 11400000, guid: f03522677e91abd4d83f97e1db4561c3, type: 2}
-    origin: {x: 3, y: 4}
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 3, y: 0}
     layerZ: 0
   - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
-    origin: {x: 4, y: 6}
+    origin: {x: 3, y: 3}
     layerZ: 0

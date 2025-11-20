@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
   m_Name: Tnt
   m_EditorClassIdentifier: 
-  objectId: TNT
+  baseName: 20
+  objectId: TNT2x2
   prefab: {fileID: 5543203482489310533, guid: 875ba6932db02764db12c3f6285d9cf8, type: 3}
   size: {x: 2, y: 2}
   prefabOffset: {x: 0, y: 0, z: 0}
-  editorColor: {r: 1, g: 0, b: 0.009994984, a: 0.6666667}
+  editorColor: {r: 0.8, g: 0.2, b: 0.22, a: 0.75}

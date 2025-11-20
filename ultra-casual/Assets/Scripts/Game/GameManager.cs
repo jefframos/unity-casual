@@ -296,6 +296,8 @@ public class GameManager : MonoBehaviour
                         }
                     );
                 }
+                levelManager?.ResetAll();
+
                 await levelManager.SpawnLevelByGlobalIndex(nextLevelToSpawn);
             }
             else
@@ -331,5 +333,11 @@ public class GameManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.R)) _ = RestartGame(100);
         if (Input.GetKeyDown(KeyCode.E)) EndGame();
+    }
+
+    internal async Task reloadLevelByGlobalIdAsync(int currentGlobalLevel)
+    {
+        await levelManager.SpawnLevelByGlobalIndex(currentGlobalLevel);
+        await StartGame();
     }
 }

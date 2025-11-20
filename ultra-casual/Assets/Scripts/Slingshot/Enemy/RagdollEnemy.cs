@@ -24,7 +24,7 @@ public class RagdollEnemy : MonoBehaviour, IResettable
     public float ragdollAngularDamping = 0.5f;
 
     [Header("Kill Rules")]
-    public EnemyGrade grade = EnemyGrade.Standard;
+    public EnemyGrade grade = EnemyGrade.Standard0;
     [Tooltip("Override the grade-based kill impulse. If <= 0, grade default is used.")]
     public float killImpulseOverride = -1f;
 
@@ -234,8 +234,8 @@ public class RagdollEnemy : MonoBehaviour, IResettable
         if (killImpulseOverride > 0f) return killImpulseOverride;
         return grade switch
         {
-            EnemyGrade.Weak => WEAK_KILL_IMPULSE,
-            EnemyGrade.Heavy => HEAVY_KILL_IMPULSE,
+            EnemyGrade.Weak0 => WEAK_KILL_IMPULSE,
+            EnemyGrade.Heavy0 => HEAVY_KILL_IMPULSE,
             _ => STANDARD_KILL_IMPULSE
         };
     }

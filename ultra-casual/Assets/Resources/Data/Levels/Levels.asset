@@ -17,6 +17,8 @@ MonoBehaviour:
     areaSprite: {fileID: 0}
     description: 
     levelPrefabs:
-    - {fileID: 2822093164941881214, guid: 68c874a735e22f34299ab21a3408aa8a, type: 3}
-    - {fileID: 5844107979336473339, guid: fb5dbd424533ff645ae941d4adcf946a, type: 3}
+    - {fileID: 2960885242155333084, guid: 5f7027ae20c78ef449129bf93d0a78ec, type: 3}
+    - {fileID: 3174789603206719298, guid: 0e704a602d0ec5943baa6be66bf24b30, type: 3}
+    - {fileID: 7508603655163068990, guid: 1ff1d164170dfba4fb39fa870ed9f2dd, type: 3}
     - {fileID: 5555504358288825382, guid: 64d6f827ed14fb347af530ddceeaf3ad, type: 3}
+    - {fileID: 2822093164941881214, guid: 68c874a735e22f34299ab21a3408aa8a, type: 3}

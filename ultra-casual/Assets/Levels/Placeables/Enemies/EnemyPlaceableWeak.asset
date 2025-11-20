@@ -16,4 +16,4 @@ MonoBehaviour:
   prefab: {fileID: 7584871028043928988, guid: 0c5e1723c9cbbcd48ac9bd0a0383ca38, type: 3}
   size: {x: 2, y: 4}
   prefabOffset: {x: 0, y: 0, z: 0}
-  editorColor: {r: 1, g: 0.050943315, b: 0.08665006, a: 0.35}
+  editorColor: {r: 1, g: 0.050943315, b: 0.08665006, a: 1}

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab9ef8e938c0dbb45bc6aaa0f41f4f52, type: 3}
   m_Name: EnemyStrong
   m_EditorClassIdentifier: 
-  type: 2
+  type: 20
   color: {r: 0.4598382, g: 0.06666668, b: 0.99215686, a: 1}
   icon: {fileID: 21300000, guid: 39d1c1c8a941a324fa885907539132f1, type: 3}
   value: 150

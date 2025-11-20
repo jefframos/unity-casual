@@ -309,9 +309,11 @@ public class ExplosiveEffector : MonoBehaviour
             }
             else
             {
-                var rb = h.attachedRigidbody ?? h.GetComponentInParent<Rigidbody>();
+                var rb = h.attachedRigidbody ?? h.GetComponent<Rigidbody>();
+
                 if (rb != null && rb.isKinematic == false)
                 {
+                    rb.WakeUp();
                     if (definition.useAddExplosionForce)
                     {
                         rb.AddExplosionForce(

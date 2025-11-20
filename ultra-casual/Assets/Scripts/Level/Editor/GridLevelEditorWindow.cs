@@ -266,7 +266,47 @@ public class GridLevelEditorWindow : EditorWindow
             }
         }
     }
+    private void FindPlaceablesInResources()
+    {
+        if (_settings == null)
+            return;
 
+        if (_settings.palette == null)
+        {
+            _settings.palette = new List<PlaceableObjectDef>();
+        }
+
+        // Look for all PlaceableObjectDef assets under Assets/Resources
+        string[] guids = AssetDatabase.FindAssets(
+            "t:PlaceableObjectDef",
+            new[] { "Assets/Levels" });
+
+        int addedCount = 0;
+
+        foreach (var guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            var def = AssetDatabase.LoadAssetAtPath<PlaceableObjectDef>(path);
+            if (def == null)
+                continue;
+
+            // Only add if not already in the palette
+            if (!_settings.palette.Contains(def))
+            {
+                _settings.palette.Add(def);
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0)
+        {
+            EditorUtility.SetDirty(_settings);
+            // After adding, sort and clean the list
+            SortAndCleanPalette();
+        }
+
+        Debug.Log($"[GridLevelEditorWindow] FindPlaceablesInResources added {addedCount} new placeables from Resources.");
+    }
     private void DrawPalette()
     {
         // Header + sort/clean button
@@ -274,6 +314,12 @@ public class GridLevelEditorWindow : EditorWindow
         {
             EditorGUILayout.LabelField("Palette", EditorStyles.boldLabel);
             GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button("Find Placeables", GUILayout.Width(120)))
+            {
+                FindPlaceablesInResources();
+            }
+
             if (GUILayout.Button("Sort & Clean", GUILayout.Width(100)))
             {
                 SortAndCleanPalette();

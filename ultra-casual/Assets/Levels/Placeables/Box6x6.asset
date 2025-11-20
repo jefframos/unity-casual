@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
   m_Name: Box6x6
   m_EditorClassIdentifier: 
-  objectId: Box3x1
+  baseName: 1
+  objectId: WoodBox6x6
   prefab: {fileID: 100000, guid: ed6f8910280bb48489b535c28ff40092, type: 3}
   size: {x: 6, y: 6}
   prefabOffset: {x: 0, y: 0, z: 0}
-  editorColor: {r: 0.8, g: 0.2, b: 0.79752123, a: 0.35}
+  editorColor: {r: 0.72, g: 0.54, b: 0.32, a: 0.75}

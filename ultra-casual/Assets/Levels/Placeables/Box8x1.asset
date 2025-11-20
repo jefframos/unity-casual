@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
+  m_Name: Box8x1
+  m_EditorClassIdentifier: 
+  baseName: 1
+  objectId: WoodBox8x1
+  prefab: {fileID: 6445988095906444382, guid: 579ec83dac137d14bbd4ad822b0411ab, type: 3}
+  size: {x: 8, y: 1}
+  prefabOffset: {x: 0, y: 0, z: 0}
+  editorColor: {r: 0.72, g: 0.54, b: 0.32, a: 0.75}

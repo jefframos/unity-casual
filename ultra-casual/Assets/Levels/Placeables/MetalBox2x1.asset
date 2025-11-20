@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
   m_Name: MetalBox2x1
   m_EditorClassIdentifier: 
-  objectId: Box2x1
+  baseName: 10
+  objectId: MetalBox4x2
   prefab: {fileID: 100000, guid: 5c265df11e039e54ea9779727775c64e, type: 3}
   size: {x: 4, y: 2}
   prefabOffset: {x: 0, y: 0, z: 0}
-  editorColor: {r: 0.5018867, g: 0.5018867, b: 0.5018867, a: 0.35}
+  editorColor: {r: 0.45, g: 0.58, b: 0.72, a: 0.75}

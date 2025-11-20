@@ -120,7 +120,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4566747556241634289, guid: 0c5e1723c9cbbcd48ac9bd0a0383ca38, type: 3}
       propertyPath: grade
-      value: 3
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 4566747556241634289, guid: 0c5e1723c9cbbcd48ac9bd0a0383ca38, type: 3}
       propertyPath: activeMaterial

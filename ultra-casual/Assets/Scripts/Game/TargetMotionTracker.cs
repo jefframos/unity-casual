@@ -258,7 +258,7 @@ public class TargetMotionTracker : MonoBehaviour
         //     return;
         // }
 
-        Debug.Log($"[TargetMotionTracker] OnTriggerEnter VALID from '{other.name}'");
+        //Debug.Log($"[TargetMotionTracker] OnTriggerEnter VALID from '{other.name}'");
 
         _inStopZone = true;
         _stopZoneEnteredThisLaunch = true;
@@ -280,7 +280,7 @@ public class TargetMotionTracker : MonoBehaviour
 
         // if (!isTracked) return;
 
-        Debug.Log($"[TargetMotionTracker] OnTriggerExit from '{other.name}'");
+        //Debug.Log($"[TargetMotionTracker] OnTriggerExit from '{other.name}'");
 
         _inStopZone = false;
     }

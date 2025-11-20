@@ -125,7 +125,6 @@ public class LevelTrackerUiController : MonoBehaviour
             _trophyInstance.gameObject.SetActive(false);
         }
 
-        Debug.Log("ResetLevel");
     }
 
     // --------------------------------------------------
@@ -754,6 +753,7 @@ public class LevelTrackerUiController : MonoBehaviour
         if (container != null)
         {
             row.transform.SetParent(container, false);
+            row.transform.gameObject.SetActive(false);
         }
 
         _pool.Push(row);
