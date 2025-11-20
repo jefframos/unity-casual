@@ -33,16 +33,21 @@ public class GameManager : MonoBehaviour
     {
         CacheGameController();
 
+        int startGlobalIndex = 0;
 
-        await levelManager.SpawnLevelByGlobalIndex(0);
+        if (ProgressionManager.Instance != null)
+        {
+            startGlobalIndex = ProgressionManager.Instance.CurrentGlobalLevelIndex;
+        }
+
+        await levelManager.SpawnLevelByGlobalIndex(startGlobalIndex);
 
         await StartGame();
+
         if (uiHandler != null)
         {
             uiHandler.SetMode(startMode);
         }
-
-
     }
 
     private void OnDisable()
@@ -133,10 +138,7 @@ public class GameManager : MonoBehaviour
 
         //ResetAll();
         levelManager?.ResetAll();
-        if (levelManager.LastRunCompletedLevel)
-        {
-            await levelManager.SpawnLevelByGlobalIndex(1);
-        }
+
         await levelManager.StartLevel(cameraBridge, uiHandler);
 
         cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.PreGame);
@@ -234,6 +236,10 @@ public class GameManager : MonoBehaviour
             }
 
             Debug.Log(levelManager.LastRunCompletedLevel);
+            Debug.Log(levelManager.LastRunCompletedLevel);
+
+            int nextLevelToSpawn = levelManager.CurrentGlobalLevelIndex; // fallback
+
             if (levelManager.LastRunCompletedLevel)
             {
                 Debug.LogWarning("SHOW END LEVEL HERE");
@@ -244,30 +250,61 @@ public class GameManager : MonoBehaviour
                 }
 
                 var nextLevelOrchestrator = FindObjectsByType<NextLevelOrchestrator>(FindObjectsSortMode.None)
-    .FirstOrDefault();
+                    .FirstOrDefault();
+
+                ProgressionManager progression = ProgressionManager.Instance;
+
+                int fromLevelDisplay = 1;
+                int toLevelDisplay = 1;
+                float finalGiftFill = 0f;
+                bool giftIsFullNow = false;
+
+                if (progression != null)
+                {
+                    // Before calling OnLevelCompleted, we are still on the "old" level.
+                    fromLevelDisplay = progression.GetDisplayLevelNumber();
+
+                    // Advance progression (level index + gift bar)
+                    giftIsFullNow = progression.OnLevelCompleted();
+
+                    toLevelDisplay = progression.GetDisplayLevelNumber();
+                    finalGiftFill = progression.GiftFill;
+
+                    nextLevelToSpawn = progression.CurrentGlobalLevelIndex;
+                }
 
                 if (nextLevelOrchestrator != null)
                 {
-                    int fromLevel = 2;
-                    int toLevel = 3;
-
-                    float giftFill = 1.0f;        // 0..1
-                    bool giftIsFull = true;       // you decide
-
                     await nextLevelOrchestrator.OrchestrateNextLevelAsync(
-                        fromLevel,
-                        toLevel,
-                        giftFill,
-                        giftIsFull,
+                        fromLevelDisplay,
+                        toLevelDisplay,
+                        finalGiftFill,
+                        giftIsFullNow,
                         onClaimGift: async () =>
                         {
-                            // TODO: put your async gift logic here
-                            // e.g. await giftChestOrchestrator.OpenAsync();
+                            // Put your async gift claim logic here
+                            // Example: give coins, powerup, etc.
+                            if (progression != null && giftIsFullNow)
+                            {
+                                // e.g. reward coins for full gift
+                                UpgradeSystem.Instance.AddCoins(100);
+
+
+                            }
+
                             await UniTask.Yield();
                         }
                     );
-
-                    //nextLevelOrchestrator.hideFlags
+                }
+                await levelManager.SpawnLevelByGlobalIndex(nextLevelToSpawn);
+            }
+            else
+            {
+                // Level failed or not fully completed, no progression advance.
+                ProgressionManager progression = ProgressionManager.Instance;
+                if (progression != null)
+                {
+                    nextLevelToSpawn = progression.CurrentGlobalLevelIndex;
                 }
             }
 

@@ -25,6 +25,7 @@ public class UiLevelTrackerElement : MonoBehaviour
     public Image checker;
     public Transform counterContainer;
     public Transform disabledContainer;
+    public Transform activeContainer;
 
     private UiLevelTrackerState currentState = UiLevelTrackerState.Inactive;
 
@@ -63,6 +64,8 @@ public class UiLevelTrackerElement : MonoBehaviour
         {
             return;
         }
+
+        activeContainer.gameObject.SetActive(false);
         if (state == UiLevelTrackerState.Hidden)
         {
             disabledContainer.gameObject.SetActive(true);
@@ -72,10 +75,10 @@ public class UiLevelTrackerElement : MonoBehaviour
         else if (state == UiLevelTrackerState.Completed)
         {
             disabledContainer.gameObject.SetActive(false);
-            transform.DOKill();
-            transform.localScale = Vector3.one;
-
-            transform.DOScale(Vector3.one * 1.1f, 0.75f).SetEase(Ease.OutBack);
+            activeContainer.gameObject.SetActive(true);
+            // transform.DOKill();
+            // transform.localScale = Vector3.one;
+            // transform.DOScale(Vector3.one * 1.1f, 0.75f).SetEase(Ease.OutBack);
         }
         else if (state == UiLevelTrackerState.Active)
         {

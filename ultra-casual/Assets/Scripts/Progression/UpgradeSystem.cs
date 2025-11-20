@@ -249,12 +249,16 @@ public class UpgradeSystem : MonoBehaviour
     public void AddCoins(int amount)
     {
         coins = Mathf.Max(0, coins + amount);
+
+        ProgressionManager.Instance.SetCoins(coins);
     }
 
     /// <summary>Remove coins from the player wallet (debug/test only).</summary>
     public void RemoveCoins(int amount)
     {
         coins = Mathf.Max(0, coins - amount);
+
+        ProgressionManager.Instance.SetCoins(coins);
     }
 
     /// <summary>Reset all upgrade levels to zero (debug/test only).</summary>
