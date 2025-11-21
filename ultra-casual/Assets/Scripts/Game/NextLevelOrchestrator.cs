@@ -22,6 +22,7 @@ public class NextLevelOrchestrator : MonoBehaviour
     public Image giftFillImage;
     [Tooltip("Optional FX shown when gift is full (shine, particles etc).")]
     public GameObject giftFullFx;
+    public GameObject giftGo;
 
     [Header("Interaction UI")]
     [Tooltip("Button used when gift is full (player claims reward).")]
@@ -57,9 +58,12 @@ public class NextLevelOrchestrator : MonoBehaviour
         int toLevel,
         float giftFillNormalized,
         bool giftIsFull,
+        bool skipGift,
         Func<UniTask> onClaimGift = null
     )
     {
+        giftGo.SetActive(!skipGift);
+
         if (IsBusy)
         {
             return;
@@ -119,26 +123,35 @@ public class NextLevelOrchestrator : MonoBehaviour
                     .AsyncWaitForCompletion();
             }
 
-            // 2) Animate gift fill to target value
-            giftFillNormalized = Mathf.Clamp01(giftFillNormalized);
-
-            if (giftFillImage != null)
+            if (!skipGift)
             {
-                await giftFillImage
-                    .DOFillAmount(giftFillNormalized, giftFillDuration)
-                    .SetEase(Ease.OutQuad)
-                    .SetUpdate(true)
-                    .AsyncWaitForCompletion();
-            }
 
-            // 3) Branch: gift full vs not full
-            if (giftIsFull)
-            {
-                await HandleGiftFullAsync(onClaimGift);
+                // 2) Animate gift fill to target value
+                giftFillNormalized = Mathf.Clamp01(giftFillNormalized);
+
+                if (giftFillImage != null)
+                {
+                    await giftFillImage
+                        .DOFillAmount(giftFillNormalized, giftFillDuration)
+                        .SetEase(Ease.OutQuad)
+                        .SetUpdate(true)
+                        .AsyncWaitForCompletion();
+                }
+
+                // 3) Branch: gift full vs not full
+                if (giftIsFull)
+                {
+                    await HandleGiftFullAsync(onClaimGift);
+                }
+                else
+                {
+                    await HandleGiftNotFullAsync();
+                }
             }
             else
             {
                 await HandleGiftNotFullAsync();
+
             }
 
             // 4) Fade out and hide

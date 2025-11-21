@@ -16,5 +16,5 @@ MonoBehaviour:
   color: {r: 0.4598382, g: 0.06666668, b: 0.99215686, a: 1}
   icon: {fileID: 21300000, guid: 39d1c1c8a941a324fa885907539132f1, type: 3}
   value: 150
-  killImpulse: 80
+  killImpulse: 65
   mass: 160

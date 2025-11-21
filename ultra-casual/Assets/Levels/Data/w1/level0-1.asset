@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41325b2536c1f3a40bf5986b13cdf08d, type: 3}
+  m_Name: level0-1
+  m_EditorClassIdentifier: 
+  levelName: Level0-1
+  gridSize: {x: 9, y: 16}
+  cellSize: 1
+  depth: 1
+  placed:
+  - def: {fileID: 11400000, guid: e871f7c5765c92349b7d8e43062575b0, type: 2}
+    origin: {x: 1, y: 8}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
+    origin: {x: 3, y: 10}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 1, y: 10}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 3a842c2525d3f284689b59f96a34a487, type: 2}
+    origin: {x: 1, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 3a842c2525d3f284689b59f96a34a487, type: 2}
+    origin: {x: 6, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
+    origin: {x: 3, y: 0}
+    layerZ: 0

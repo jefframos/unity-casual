@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41325b2536c1f3a40bf5986b13cdf08d, type: 3}
+  m_Name: level0-4
+  m_EditorClassIdentifier: 
+  levelName: Level0-4
+  gridSize: {x: 12, y: 8}
+  cellSize: 1
+  depth: 2
+  placed:
+  - def: {fileID: 11400000, guid: ad15ec315b1d0384c866108818e8a4cb, type: 2}
+    origin: {x: 0, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: ad15ec315b1d0384c866108818e8a4cb, type: 2}
+    origin: {x: 8, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
+    origin: {x: 4, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
+    origin: {x: 6, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: b87923b14ef9c214cb66e66ac003bc58, type: 2}
+    origin: {x: 2, y: 4}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: cfb4177e9b56df6409ca92419a313e52, type: 2}
+    origin: {x: 5, y: 0}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 3, y: 0}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 7, y: 0}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 3, y: 3}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 7, y: 3}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 0, y: 0}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 10, y: 0}
+    layerZ: 1
+  - def: {fileID: 11400000, guid: 54fde3aba27b1364a8355fb6b8be787c, type: 2}
+    origin: {x: 4, y: 6}
+    layerZ: 1

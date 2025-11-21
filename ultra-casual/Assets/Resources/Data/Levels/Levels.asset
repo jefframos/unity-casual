@@ -17,8 +17,11 @@ MonoBehaviour:
     areaSprite: {fileID: 0}
     description: 
     levelPrefabs:
-    - {fileID: 2960885242155333084, guid: 5f7027ae20c78ef449129bf93d0a78ec, type: 3}
-    - {fileID: 3174789603206719298, guid: 0e704a602d0ec5943baa6be66bf24b30, type: 3}
-    - {fileID: 7508603655163068990, guid: 1ff1d164170dfba4fb39fa870ed9f2dd, type: 3}
-    - {fileID: 5555504358288825382, guid: 64d6f827ed14fb347af530ddceeaf3ad, type: 3}
-    - {fileID: 2822093164941881214, guid: 68c874a735e22f34299ab21a3408aa8a, type: 3}
+    - {fileID: 8386840243520447394, guid: 4a5bf9a799141ca40a65f87ee3246edb, type: 3}
+    - {fileID: 8993576664191243422, guid: 57139c50ae1720a43aea1d949324a9cc, type: 3}
+    - {fileID: 5909206775283413700, guid: e840ca6cc66c12a48ab5df9652e18e89, type: 3}
+    - {fileID: 5964192848518755762, guid: 0e036b1b77f00b64393a97ad911a5637, type: 3}
+    - {fileID: 1410062111426707248, guid: 162a6d0fe8f835d42bd2df5782c28271, type: 3}
+    - {fileID: 45244467079888751, guid: 95862a50392f4024c9a2e0d24d84ca15, type: 3}
+    - {fileID: 8296283848644532529, guid: 87565dc80b8aff349b5678cc459cf68b, type: 3}
+    - {fileID: 7207614200294336860, guid: eccdbc92c806e7449be112d51ce5a42d, type: 3}

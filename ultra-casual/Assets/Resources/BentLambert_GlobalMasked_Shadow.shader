@@ -14,6 +14,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
         [Header(Outline)]
         _OutlineColor     ("Outline Color (per-material)", Color) = (0, 0, 0, 1)
         _OutlineThickness ("Outline Thickness (per-material)", Range(0, 0.1)) = 0.03
+        [Toggle] _OutlineIgnore ("Ignore Outline", Float) = 0
 
         [Header(Cutout)]
         [Toggle] _CutoutIgnore ("Ignore Global Camera Cutout", Float) = 0
@@ -77,6 +78,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 // Per-material cutout override (0 = obey global, 1 = ignore cutout)
                 float  _CutoutIgnore;
+                float  _OutlineIgnore;
             CBUFFER_END
 
             // -------- GLOBALS (driven by controller) --------
@@ -283,6 +285,8 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 float alpha = baseCol.a;
 
+               
+
                 // ----- CAMERA–PLAYER CUTOUT -----
                 // Uses _WB_Origin_G as "player/world origin", and _WorldSpaceCameraPos as camera.
                 if (_WB_CutoutEnable_G > 0.5 && _CutoutIgnore < 0.5 && _WB_CutoutRadius_G > 0.0)
@@ -409,6 +413,8 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float  _OutlineThickness;
 
                 float  _CutoutIgnore;
+                float _OutlineIgnore;
+
             CBUFFER_END
 
             float _WB_Strength_G;
@@ -504,6 +510,9 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                         ? _WB_OutlineThickness_G
                         : _OutlineThickness;
 
+                         if(_OutlineIgnore > 0.5){
+                            outlineThickness = 0;
+                         }
                 posWS += nrmWS * outlineThickness;
 
                 if (_WB_DisableBend > 0.5)

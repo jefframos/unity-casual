@@ -17,6 +17,7 @@ public class GameManager : MonoBehaviour
     public GameUiHandler uiHandler;
     public UiMode startMode = UiMode.MainMenu;
     public LevelManager levelManager;
+    public bool skipGift;
 
     private IGameController _gameController;
 
@@ -235,8 +236,6 @@ public class GameManager : MonoBehaviour
                 );
             }
 
-            Debug.Log(levelManager.LastRunCompletedLevel);
-            Debug.Log(levelManager.LastRunCompletedLevel);
 
             int nextLevelToSpawn = levelManager.CurrentGlobalLevelIndex; // fallback
 
@@ -280,6 +279,7 @@ public class GameManager : MonoBehaviour
                         toLevelDisplay,
                         finalGiftFill,
                         giftIsFullNow,
+                        skipGift,
                         onClaimGift: async () =>
                         {
                             // Put your async gift claim logic here

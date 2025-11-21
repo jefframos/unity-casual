@@ -12,12 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f9ec41879cdc4048b51afac6187e675, type: 3}
   m_Name: LevelEditorSettings
   m_EditorClassIdentifier: 
-  levelsFolder: Assets/Levels/Data
-  prefabsFolder: Assets/Levels/Prefabs
+  levelsFolder: Assets/Levels/Data/w1
+  prefabsFolder: Assets/Levels/Prefabs/w1
   palette:
   - {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
   - {fileID: 11400000, guid: 3a842c2525d3f284689b59f96a34a487, type: 2}
   - {fileID: 11400000, guid: 5d52e4a4cf3c15c4eb4d12a76159a625, type: 2}
+  - {fileID: 11400000, guid: 6b00409f2c805bc40b6773e8d02f8e9f, type: 2}
   - {fileID: 11400000, guid: fa5bd7fa24591a14ba2be3911fe71628, type: 2}
   - {fileID: 11400000, guid: d7594671e37707642952b04b6433bdf2, type: 2}
   - {fileID: 11400000, guid: 54fde3aba27b1364a8355fb6b8be787c, type: 2}

@@ -17,10 +17,10 @@ MonoBehaviour:
   impactMinSpeed: 5
   startupGraceSeconds: 0.25
   requireMovementImpact: 1
-  useAddExplosionForce: 1
+  useAddExplosionForce: 0
   explosionUpwardsModifier: 0
-  baseForce: 80
-  forceMode: 1
+  baseForce: 20
+  forceMode: 2
   scaleByMass: 1
   randomAngleJitterDeg: 0
   falloff:
