@@ -20,9 +20,6 @@ MonoBehaviour:
   - def: {fileID: 11400000, guid: e871f7c5765c92349b7d8e43062575b0, type: 2}
     origin: {x: 1, y: 8}
     layerZ: 0
-  - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
-    origin: {x: 3, y: 10}
-    layerZ: 0
   - def: {fileID: 11400000, guid: 3a842c2525d3f284689b59f96a34a487, type: 2}
     origin: {x: 1, y: 0}
     layerZ: 0

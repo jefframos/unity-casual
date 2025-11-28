@@ -209,9 +209,14 @@ public class GameManager : MonoBehaviour
     }
     private async UniTask PlayMiniGame(CancellationToken token)
     {
+        var warning = FindObjectsByType<EndgameWarningOrchestrator>(
+        FindObjectsInactive.Include,
+        FindObjectsSortMode.None
+    ).FirstOrDefault();
+        await warning.PlayWarningAsync("Boss Incoming", 3f, token);
         cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.MiniGame);
         var bonusFromMinigame = 0;
-        var minigame = FindObjectsByType<EndgameMinigameOrchestrator>(FindObjectsSortMode.None)
+        var minigame = FindObjectsByType<EndgameMinigameOrchestrator>(FindObjectsInactive.Include, FindObjectsSortMode.None)
             .FirstOrDefault();
 
         if (minigame != null)
@@ -228,10 +233,14 @@ public class GameManager : MonoBehaviour
     {
         try
         {
-
-            await PlayMiniGame(token);
-
             var snapshot = levelManager.EndLevel();
+
+            if (levelManager.LastRunCompletedLevel)
+            {
+                await PlayMiniGame(token);
+            }
+
+
 
             EndGame();
 

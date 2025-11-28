@@ -33,6 +33,7 @@ public class EndgameMinigameOrchestrator : MonoBehaviour
     public EndgameMinigameTarget targetPrefab;
 
     public EndgameMinigameGun GunComponent;
+    public EndgameGunInput EndgameGunInput;
 
     [Header("Gameplay")]
     [Tooltip("Total number of targets to spawn for this minigame run.")]
@@ -150,6 +151,7 @@ public class EndgameMinigameOrchestrator : MonoBehaviour
     private void Awake()
     {
         canvas.gameObject.SetActive(false);
+        EndgameGunInput.enabled = false;
         if (targetPrefab != null)
         {
             EnsurePool();
@@ -164,6 +166,8 @@ public class EndgameMinigameOrchestrator : MonoBehaviour
         if (bossLifeBar != null)
         {
             bossLifeBar.SetNormalizedProgress(0f);
+
+            bossLifeBar.gameObject.SetActive(false);
         }
     }
 
@@ -245,6 +249,8 @@ public class EndgameMinigameOrchestrator : MonoBehaviour
     public async UniTask<int> PlayMinigameAsync(CancellationToken externalToken)
     {
         canvas.gameObject.SetActive(true);
+        bossLifeBar.gameObject.SetActive(true);
+        EndgameGunInput.enabled = true;
         if (!isActiveAndEnabled)
         {
             if (debugLogs)
@@ -334,6 +340,8 @@ public class EndgameMinigameOrchestrator : MonoBehaviour
                 // Show summary UI (hits + total prize) before finishing
                 if (summaryView != null && !_linkedToken.IsCancellationRequested)
                 {
+                    EndgameGunInput.enabled = false;
+                    bossLifeBar.gameObject.SetActive(false);
                     await summaryView.PlaySummaryAsync(
                         hitCount: _hitCount,
                         totalTargets: totalTargetsToSpawn,

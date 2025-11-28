@@ -3,19 +3,31 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 public class EndgameMinigameChestOpenHandler : MonoBehaviour
 {
     [Header("References")]
+    [Tooltip("Root GameObject that contains the chest visuals and (optionally) the label / claim button.")]
+    public GameObject chestRoot;
+
     [Tooltip("RectTransform of the chest image.")]
     public RectTransform chestRect;
+    public RectTransform prizeRect;
 
     [Tooltip("Label that shows the prize after the chest pops.")]
     public TMP_Text prizeText;
 
     [Tooltip("Optional coin rain spawner that will play behind the label.")]
     public EndgameCoinRainSpawner coinRainSpawner;
+
+    [Header("Claim UI")]
+    [Tooltip("Button that the player presses to claim the reward.")]
+    public Button claimButton;
+
+    [Tooltip("Optional container for claim UI; if null, only claimButton is toggled.")]
+    public GameObject claimUiRoot;
 
     [Header("Chest Motion")]
     [Tooltip("Anchored position where the chest starts (optional, will snapshot at first run if left zero).")]
@@ -47,7 +59,10 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
     private bool _initialized;
     private Vector2 _cachedStartPos;
     private Vector3 _cachedBaseScale;
-
+    void Awake()
+    {
+        prizeRect.gameObject.SetActive(false);
+    }
     private void InitIfNeeded()
     {
         if (_initialized)
@@ -78,19 +93,42 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
 
     /// <summary>
     /// Runs the full chest sequence:
+    /// - Ensure chest + claim UI are visible
+    /// - Wait for claim click
+    /// - Hide claim UI
     /// - Move chest to center
-    /// - Pop chest and hide it
+    /// - Pop chest and visually remove it
     /// - Show prize label and count 0..totalPrize
-    /// - Play coin rain in parallel
+    /// - Play coin rain in parallel (optional)
     /// - Wait a small delay and finish
     /// </summary>
     public async UniTask PlayChestSequenceAsync(int totalPrize, CancellationToken token)
     {
         InitIfNeeded();
 
+        if (totalPrize < 0)
+        {
+            totalPrize = 0;
+        }
+
+        // Fallback if no chestRect: just show prize
         if (chestRect == null)
         {
-            // Nothing to animate, but we still need to show prize text.
+            if (chestRoot != null)
+            {
+                chestRoot.SetActive(true);
+            }
+
+            if (claimUiRoot != null)
+            {
+                claimUiRoot.SetActive(false);
+            }
+
+            if (claimButton != null)
+            {
+                claimButton.gameObject.SetActive(false);
+            }
+
             if (prizeText != null)
             {
                 prizeText.gameObject.SetActive(true);
@@ -115,6 +153,14 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
             return;
         }
 
+        // ---------------------------
+        // Initial state: chest visible, claim visible, prize hidden
+        // ---------------------------
+        if (chestRoot != null)
+        {
+            chestRoot.SetActive(true);
+        }
+
         chestRect.gameObject.SetActive(true);
         chestRect.anchoredPosition = _cachedStartPos;
         chestRect.localScale = _cachedBaseScale;
@@ -124,6 +170,59 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
             prizeText.gameObject.SetActive(false);
         }
 
+        if (claimUiRoot != null)
+        {
+            claimUiRoot.SetActive(true);
+        }
+
+        if (claimButton != null)
+        {
+            claimButton.gameObject.SetActive(true);
+        }
+
+        // ---------------------------
+        // Wait for claim click
+        // ---------------------------
+        if (claimButton != null)
+        {
+            bool clicked = false;
+
+            void OnClicked()
+            {
+                clicked = true;
+            }
+
+            claimButton.onClick.AddListener(OnClicked);
+
+            try
+            {
+                while (!clicked && !token.IsCancellationRequested)
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
+                }
+            }
+            finally
+            {
+                claimButton.onClick.RemoveListener(OnClicked);
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+        }
+
+        // Hide claim UI; from here, we play chest animation and reveal prize
+        if (claimUiRoot != null)
+        {
+            claimUiRoot.SetActive(false);
+        }
+
+        if (claimButton != null)
+        {
+            claimButton.gameObject.SetActive(false);
+        }
+        prizeRect.gameObject.SetActive(false);
         // ---------------------------
         // Move to center
         // ---------------------------
@@ -167,8 +266,6 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
                 t += Time.unscaledDeltaTime;
                 float normalized = Mathf.Clamp01(t / popDuration);
 
-                // First half: 0 -> popScale
-                // Second half: popScale -> 0
                 Vector3 targetScale;
 
                 if (normalized <= 0.5f)
@@ -199,23 +296,21 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
             return;
         }
 
-        chestRect.gameObject.SetActive(false);
+        // Visually remove chest image, but keep root active so label can show
+        // If your chest image uses a Graphic, you can also disable it here:
+        // var graphic = chestRect.GetComponent<Graphic>();
+        // if (graphic != null) graphic.enabled = false;
 
         // ---------------------------
         // Show prize label and coin rain
         // ---------------------------
-        if (totalPrize < 0)
-        {
-            totalPrize = 0;
-        }
-
         if (prizeText != null)
         {
+            prizeRect.gameObject.SetActive(true);
             prizeText.gameObject.SetActive(true);
             prizeText.text = "0";
         }
 
-        // Start coin rain in parallel (if any)
         UniTask coinRainTask = UniTask.CompletedTask;
 
         // if (coinRainSpawner != null)
@@ -223,7 +318,6 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
         //     coinRainTask = coinRainSpawner.PlayCoinRainAsync(token);
         // }
 
-        // Count up label
         if (prizeText != null && rewardCountDuration > 0f)
         {
             float t = 0f;
@@ -245,10 +339,13 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
             prizeText.text = totalPrize.ToString();
         }
 
-        // Wait for rain to finish (if it has its own duration)
         await coinRainTask.AttachExternalCancellation(token);
 
-        // Extra delay after label
+        if (token.IsCancellationRequested)
+        {
+            return;
+        }
+
         if (postLabelDelay > 0f)
         {
             await UniTask.Delay(

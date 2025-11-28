@@ -142,6 +142,7 @@ public class EndgameMinigameGun : MonoBehaviour
     /// </summary>
     public void ShootAt(Vector2 screenPosition)
     {
+        Debug.Log(screenPosition);
         if (targetCamera == null)
         {
             targetCamera = Camera.main;

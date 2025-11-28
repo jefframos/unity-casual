@@ -7,6 +7,20 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class EndgameMinigameTarget : MonoBehaviour
 {
+    [Header("Gravity")]
+    [Tooltip("If true, gravity will be applied to the target over time.")]
+    [SerializeField]
+    private bool useGravity = true;
+
+    [Tooltip("Gravity vector applied to this target (in world space). " +
+             "Defaults to Physics.gravity.")]
+    [SerializeField]
+    private Vector3 gravity = Physics.gravity;
+
+    [Tooltip("Multiplier for the gravity vector.")]
+    [SerializeField]
+    private float gravityMultiplier = 1f;
+
     private EndgameMinigameOrchestrator _owner;
     private Vector3 _moveDirection;
     private float _speed;
@@ -21,9 +35,15 @@ public class EndgameMinigameTarget : MonoBehaviour
 
     private CoinsOnHit _coinsOnHit;
 
+    // Runtime velocity used for gravity + movement
+    private Vector3 _velocity;
+
     public int RewardValue
     {
-        get { return _rewardValue; }
+        get
+        {
+            return _rewardValue;
+        }
     }
 
     public void Init(
@@ -60,6 +80,9 @@ public class EndgameMinigameTarget : MonoBehaviour
         targetScale.y = 0.05f;
         transform.localScale = _baseScale;
 
+        // Initial velocity in the spawn direction
+        _velocity = _moveDirection * _speed;
+
         MoveAndLifetimeAsync().Forget();
     }
 
@@ -77,16 +100,29 @@ public class EndgameMinigameTarget : MonoBehaviour
                 float dt = Time.unscaledDeltaTime;
                 elapsed += dt;
 
-                float tNorm = _lifetime > 0f ? Mathf.Clamp01(elapsed / _lifetime) : 0f;
+                float tNorm = _lifetime > 0f
+                    ? Mathf.Clamp01(elapsed / _lifetime)
+                    : 0f;
 
+                // Evaluate speed factor from curve (e.g. ease in/out)
                 float speedFactor = 1f;
                 if (_speedCurve != null)
                 {
                     speedFactor = _speedCurve.Evaluate(tNorm);
                 }
 
-                transform.position += _moveDirection * _speed * speedFactor * dt;
+                // Apply gravity to velocity
+                if (useGravity)
+                {
+                    Vector3 effectiveGravity = gravity * gravityMultiplier;
+                    _velocity += effectiveGravity * dt;
+                }
 
+                // Move using current velocity (with curve factor)
+                Vector3 frameVelocity = _velocity * speedFactor;
+                transform.position += frameVelocity * dt;
+
+                // Scale over lifetime
                 if (_scaleCurve != null)
                 {
                     float scaleFactor = _scaleCurve.Evaluate(tNorm);
@@ -95,6 +131,7 @@ public class EndgameMinigameTarget : MonoBehaviour
                     transform.localScale = targetScale;
                 }
 
+                // Face the camera (billboard style)
                 if (cam != null)
                 {
                     transform.LookAt(cam.transform);
@@ -120,7 +157,10 @@ public class EndgameMinigameTarget : MonoBehaviour
         }
     }
 
-    private void OnMouseDown()
+    /// <summary>
+    /// Called when the player successfully hits this target (via raycast / projectile).
+    /// </summary>
+    public void ResolveHit()
     {
         if (_resolved)
         {
@@ -138,5 +178,15 @@ public class EndgameMinigameTarget : MonoBehaviour
         {
             _owner.NotifyTargetHit(this);
         }
+
+        // Optional: disable collider / visuals here
+        // GetComponent<Collider>().enabled = false;
+        // gameObject.SetActive(false);
+    }
+
+    // Optional: keep OnMouseDown for editor / debug clicks
+    private void OnMouseDown()
+    {
+        ResolveHit();
     }
 }
