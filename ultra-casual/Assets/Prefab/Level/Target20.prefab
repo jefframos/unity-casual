@@ -472,6 +472,7 @@ MonoBehaviour:
   isMultiplier: 0
   playerTag: Player
   upgradeSystem: {fileID: 0}
+  autoDisable: 1
   useTrigger: 1
   targetTMP: {fileID: 5517694883085312712}
 --- !u!64 &5571129786742214600

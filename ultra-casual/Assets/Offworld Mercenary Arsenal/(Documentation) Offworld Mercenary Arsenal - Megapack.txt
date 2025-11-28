@@ -1,0 +1,178 @@
+Offworld Mercenary Arsenal - series
+Season One Mega Pack (All-in-one)
+
+-- Readme / Documentation --
+
+==
+
+WHAT IS THE OMA SERIES:
+
+Offworld Mercenary Arsenal (OMA) is a varied collection of weapons, items, devices, grenades, ammo and tools. 
+
+They're provided as 3D low-poly models, voxel models and 2D pixel-art sprites. 
+
+Use these assets in your commercial or personal projects - be it games, animations, illustrations, media or anything else.
+
+
+==
+
+QUICK START:
+
+- If you just want a 3D model with its original colors, go to the Meshes>FBX folder (or Prefabs) and drag any model into the Scene.
+
+- If you want a silhouette model where the entire model is just a single color, go to Meshes>OBJ and drag a model into the Scene. Create a new material and drag it onto to the model.
+
+- If you just want sprites for your pixel-perfecy 2D game, go to Sprites>Pixelart and drag the images to your Scene.
+
+- Alternatively use the Upscale sprites (20X or BIG) if need large images with a bigger resolution.
+
+- If you want the 3D mercenary character that shows up in the demo/screenshots, go to ProtoMerc_Character folder (or Prefabs) and use the ProtoMerc_TPose.FBX file. Its fully rigged and has a humanoid avatar ready for Mecanim use.
+
+
+==
+
+PACKAGE CONTENTS - Folder Navigation:
+
+Here I explain what each folder contains.
+
+# Offworld Mercenary Arsenal (root folder)
+
+
+## Demo
+- An interactive playable scene where you can quickly see all guns. You can toggle between dark and light background, as well as rotate every object in the scene. Features both keyboard and mouse controls!
+
+
+## DescriptionsLore
+- Stand-in lore descriptions for each individual weapon. These may be helpful to gain ideas for game mechanics, but you are always free to reimagine each weapon as you wish. The description explain what each weapon is, what features/attributes it has and how/where its used in a fictional sci-fi universe.
+
+
+## KenneyShape (Source files)
+- .Kenshape files can be opened with the fantastic Kenney Shape program. This allows you to modify the original model easily and re-export* it into various formats.
+Get it here: https://kenney.itch.io/kenney-shape
+
+*Note: original exported OMA models use "Texture: None" setting within Kenney Shape. It may sounds like it would export the models as a textureless grey model, but this is not true; it does actually include colors too, so always use that! "Atlas" and "UV Unwrapped" result in different, usually inaccurate and messy results.
+
+
+## Meshes
+- 3D low-poly models of each weapon, these are game-ready assets for any 3D game. For convenience, I've provided both .OBJ and .FBX formats.
+- .FBX works best within Unity, while .OBJ are great for uses outside Unity where only .OBJ files are supported.
+- FBX will have full colors, meanwhile OBJ use only a single color for the entire model - they're great for silhouettes! Outside Unity, OBJ models do actually have the same colors as FBX, its just that Unity doesn't support OBJ's materials by default.
+- It is possible to request .DAE and .GLB (gltf 2.0) models as future updates for free. I will make them if people want them.
+
+
+## Prefabs
+- Ready-to-use prefabs that are sorted by weapon category type. They're the same as a raw FBX file at the moment.
+
+
+## ProtoMerc_Character
+- As a bonus, theres a fully rigged avatar driven character: The Proto Mercenary (ProtoMerc).
+- I've also provided 3 variants of a backpack/jetpack unit for the mercenary character.
+- If you want to animate the ProtoMerc for your game, use Mecanim animation packs from the Unity Asset Store.
+
+
+## Scripts
+- Just a few helper tools.
+-"Batch Extract Materials" allows you to enable editing materials/shaders of all guns without having to extract their materials one-by-one. See below guide for more instructions.
+-"Asset Preview Grid" allows you to take a bunch of game objects and instantly position them into a neat grid with one click. I used it in the Demo scene to position the weapons into a grid. Can be added to a parent game object via Custom Tools from Unity's top bar. Will affect any children attached to parent.
+
+
+## Sprites
+- 2D side-view sprites of each weapon, ready for use in any 2D game. The pixel-art uses a '32 pixels per meter' measurement/size/scale standard. 
+- The upscaled versions are easier to handle in non-pixel-perfect games. The "20X" are resized 20 times the original size and are standardized when viewed side by side - better for in-game use, whereas BIG is resized to show the weapon as a big illustration - better suited for UIs and menus.
+- Vector folder contains .svg files that can be used in vector graphic applications outside of Unity. Useful in marketing illustrations or other designs.
+
+
+## Voxels
+- Contains experimental voxel models that differ greatly from the Mesh versions seen in the gallery. They can be opened and edited with MagicaVoxel, a free program.
+- These models do not work within Unity. You must first import them to MagicaVoxel and then export them to FBX or other compatible format if you wish to use them in Unity.
+- This provides an alternative way to modify the files beside using Kenney Shape, Blender or other 3D software - but as a blocky Minecraft-esque voxel model.
+Link to MagicaVoxel - https://ephtracy.github.io/
+
+
+
+==
+
+GUIDE - ALTERING MATERIALS OF WEAPON 3D MODELS (FBX):
+
+- METHOD 1 MANUAL - If you want to change the appearance of the fbx model - like change its shader or material settings so it looks differently in light - then you must go to Meshes>FBX and create a folder of the same name as the weapon or atleast its nickname. Then in the inspector panel while the FBX file is selected, go to Materials tab and then press "Extract Materials". It will ask for a destination, so put them in the folder you just created - this will help you stay organized if you want to do more guns.
+
+- If you did the above, you can also now change the colors of the weapon model too. You can either alter the original extract materials or slot in new materials you're made yourself to replace the existing colors that came with the model.
+
+- For even more organization, use a Mass Renamer tool to change the names of materials to less generic ones (like [WeaponName - ][Number] format).
+https://assetstore.unity.com/packages/tools/utilities/universal-rename-tool-84549#content
+
+- METHOD 2 AUTOMATIC - If you don't care about changing colors manually for each weapon but you still want to change the material properties/shaders in bulk and you want the easiest and fastest way to do ALL the weapons automatically, then you can make a single Materials folder in the Meshes>FBX folder and use the included "Batch Extract Materials" tool that came with the pack. You can access this tool via the top bar in Unity via Window>Batch Extract Materials. Its fairly easy to use, just make sure that "Don't remap model A's materials to model B" fourth setting is on, so the materials stay seperate per model.
+
+- More information for the above tool can be seen here (Credit goes to original author, scroll to bottom for a HowTo post):
+https://gist.github.com/yasirkula/3d3ffe9fdf6330a1328dd026b9f1cc62
+
+- But basically just select all the FBX files at once in the Project window, drag them into the Batch Extract Materials tool as per on-screen instructions, set the correct destination folder (the Materials folder you just made in Meshes>FBX folder in project window) make sure the 4th setting is on (Don't remap model A... etc), scroll down and press "Next", then press "Extract All", then scroll to the bottom of the list and press "Extract!" button. 
+
+- Now you can go into the Materials folder, select all materials at once and change their settings all at once in the inspector window; change metallic, smoothness, source, switch shaders, etc.
+
+- Technically you can also change colors after doing things this way too, but you will not have the organization you'd have had with the first method. But then again, the automatic batch extract materials cannot extract the materials of each model in their own seperate folder, so you'll have to choose which method to use.
+
+
+
+==
+
+EXTRA MODELS PROMISE:
+
+At request and free of charge, it is possible to request me to add extra models for seperate magazines or add versions of certain included weapons without their magazine or add versions of a gun with certain accessories removed. I won't do entirely new weapons for free as those would be released in future seasons as paid content.
+
+I can also provide conversion to the following extra 3D formats: .dae .glb (gltf 2.0) and .stl, free of charge.
+
+reactorcoregames@gmail.com
+
+
+
+==
+
+LORE:
+
+In a far spacefaring future there be humans, aliens, mercenaries, freelancers, contractors and adventurers that go to different places in the galaxy to blast away various monsters, robots and vehicles that threaten the peace of the galaxy.
+
+OMA is a general umbrella term to describe the entire collective of various weapons, tools and devices that these people may use during their adventures - regardless of what origin or intended purpose the gun originally had. Usually someone got it somewhere, somehow, and decided to use it because they liked it or because it was the only thing available to them.
+
+The lore and weapon descriptions are intentionally vague so that you can inject your own lore into these guns. I merely give a suggestion as to what each piece is and what use-case it could have, but you or your writer are encouraged to replace all that info with whatever weapon stats and description as you wish.
+
+
+
+==
+
+LICENCE:
+
+Use the files freely in your commercial or personal projects as much as you want. 
+
+Ideally do not repackage, redistribute, resell the assets or do NFTs with them. That would be uncool.
+
+
+
+==
+
+SUPPORT / CONTACT / INQUIRIES:
+
+reactorcoregames@gmail.com
+
+++ Reactorcore Games ++
+
+Hello, I am a sole developer from Finland, specialized in pixel-art guns and advanced game design. Pleased to meet you.
+
+Credits for using the guns you bought would help me greatly in gaining more customers so I can afford to make more guns.
+If you do choose to give credit, then 'Reactorcore Games' or 'www.reactorcoregames.com' would be most excellent. Thank you.
+
+
+
+==
+
+LINKS:
+
+HOME - www.reactorcoregames.com
+DEVIANTART - https://www.deviantart.com/reactorcore3/
+LINKTREE - https://linktr.ee/reactorcore
+
+
+
+==
+
+Made with love using Jasc Paint Shop Pro 9, Jasc Animation Shop Pro 3, Shutter Encoder, Kenney Shape, Asset Forge, Unity and Notepad++.

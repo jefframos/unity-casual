@@ -20,6 +20,7 @@ public class CoinsOnHit : MonoBehaviour, IResettable
 
     [Header("Collision Mode")]
     [Tooltip("If true, award on trigger enter. If false, award on collision enter.")]
+    public bool autoDisable = true;
     public bool useTrigger = true;
     private bool awarded = false;
 
@@ -88,7 +89,30 @@ public class CoinsOnHit : MonoBehaviour, IResettable
             addedValue = (int)(LevelProgressTracker.Instance.currentDistance * value);
         }
         AddCoins(addedValue, transform.position);
-        gameObject.SetActive(false);
+
+        if (autoDisable)
+        {
+            gameObject.SetActive(false);
+        }
+
+        awarded = true;
+        // Optional: disable/pool this pickup after awarding
+        // gameObject.SetActive(false);
+    }
+
+
+    public void ForceAward(int forcedValue)
+    {
+        if (awarded)
+        {
+            return;
+        }
+        AddCoins(forcedValue, transform.position);
+
+        if (autoDisable)
+        {
+            gameObject.SetActive(false);
+        }
 
         awarded = true;
         // Optional: disable/pool this pickup after awarding

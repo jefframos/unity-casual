@@ -131,6 +131,9 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
 
     private bool enableInput = true;
 
+    public Transform directionTransform;
+
+
     private void OnValidate()
     {
         if (maxPullDistance < 0f) maxPullDistance = 0f;
@@ -169,6 +172,12 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
         if (_isDragging)
         {
             UpdateDrag();
+        }
+
+        if (directionTransform)
+        {
+            directionTransform.forward = _launchDir;
+            directionTransform.position = _target.Parent.position;
         }
     }
 
@@ -372,6 +381,8 @@ public class SimpleSlingshotController : MonoBehaviour, IGameController
 
                 Quaternion tilt = Quaternion.AngleAxis(_currentLaunchAngleDeg, rightAxis.normalized);
                 _launchDir = (tilt * flatDir).normalized;
+
+
 
                 // Impulse: use maxPullDistance * impulsePerMeter as "max base impulse"
                 float baseMaxImpulse = maxPullDistance * impulsePerMeter;

@@ -18,6 +18,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
         [Header(Cutout)]
         [Toggle] _CutoutIgnore ("Ignore Global Camera Cutout", Float) = 0
+        [Toggle] _BendIgnore ("Ignore Bend", Float) = 0
     }
 
     SubShader
@@ -79,6 +80,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 // Per-material cutout override (0 = obey global, 1 = ignore cutout)
                 float  _CutoutIgnore;
                 float  _OutlineIgnore;
+                float  _BendIgnore;
             CBUFFER_END
 
             // -------- GLOBALS (driven by controller) --------
@@ -179,7 +181,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float3 posWS = TransformObjectToWorld(IN.positionOS.xyz);
                 float3 nrmWS = TransformObjectToWorldNormal(IN.normalOS);
 
-                if (_WB_DisableBend > 0.5)
+                if (_WB_DisableBend > 0.5 || _BendIgnore > 0.5)
                 {
                     OUT.positionWS = posWS;
                     OUT.positionCS = TransformWorldToHClip(posWS);
@@ -414,6 +416,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
 
                 float  _CutoutIgnore;
                 float _OutlineIgnore;
+                float _BendIgnore;
 
             CBUFFER_END
 
@@ -515,7 +518,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                          }
                 posWS += nrmWS * outlineThickness;
 
-                if (_WB_DisableBend > 0.5)
+               if (_WB_DisableBend > 0.5 || _BendIgnore > 0.5)
                 {
                     OUT.positionWS = posWS;
                     OUT.positionCS = TransformWorldToHClip(posWS);
@@ -716,6 +719,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
             float4 _WB_TrackOffset_G;
 
             float _WB_DisableBend;
+            float _BendIgnore;
             float _WB_BendGlobe;
 
             struct Attributes
@@ -750,7 +754,7 @@ Shader "Jeff/URP/BentLambert_GlobalMasked_Shadow"
                 float3 posWS = TransformObjectToWorld(IN.positionOS.xyz);
                 float3 nrmWS = TransformObjectToWorldDir(IN.normalOS);
 
-                if (_WB_DisableBend > 0.5)
+                if (_WB_DisableBend > 0.5 || _BendIgnore > 0.5)
                 {
                     OUT.positionCS = TransformWorldToHClip(ApplyShadowBias(posWS, nrmWS, 0));
                     OUT.distAbs    = 0;

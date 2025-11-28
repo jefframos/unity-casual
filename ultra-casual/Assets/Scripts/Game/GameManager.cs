@@ -45,6 +45,9 @@ public class GameManager : MonoBehaviour
 
         await StartGame();
 
+        //await PlayMiniGame(_restartCts.Token);
+
+
         if (uiHandler != null)
         {
             uiHandler.SetMode(startMode);
@@ -204,16 +207,36 @@ public class GameManager : MonoBehaviour
 
         nextIsHighscore = false;
     }
+    private async UniTask PlayMiniGame(CancellationToken token)
+    {
+        cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.MiniGame);
+        var bonusFromMinigame = 0;
+        var minigame = FindObjectsByType<EndgameMinigameOrchestrator>(FindObjectsSortMode.None)
+            .FirstOrDefault();
 
+        if (minigame != null)
+        {
+            bonusFromMinigame = await minigame.PlayMinigameAsync(token);
+
+            if (bonusFromMinigame > 0)
+            {
+                UpgradeSystem.Instance.AddCoins(bonusFromMinigame);
+            }
+        }
+    }
     private async UniTask RestartRoutineAsync(int final, CancellationToken token)
     {
         try
         {
 
+            await PlayMiniGame(token);
+
             var snapshot = levelManager.EndLevel();
 
             EndGame();
 
+            cameraBridge.SetCameraMode(SlingshotCinemachineBridge.GameCameraMode.EndGame);
+            cameraBridge.SetCameraToPreviousTarget();
             var endGameOrchestrator = FindObjectsByType<EndGameOrchestrator>(FindObjectsSortMode.None)
                 .FirstOrDefault();
 

@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e58e04a3bece5449a93f687c74c96ba, type: 3}
   m_Name: EnemyPlaceableWeak1
   m_EditorClassIdentifier: 
+  baseName: 1
   objectId: EnemyWeak
-  prefab: {fileID: 7584871028043928988, guid: 1b2ad6e016f740a478c657a9e22045d1, type: 3}
+  prefab: {fileID: 5073269099062787654, guid: b966b0452602e7f4586323e298f440f0, type: 3}
   size: {x: 2, y: 4}
   prefabOffset: {x: 0, y: 0, z: 0}
   editorColor: {r: 1, g: 0.05098039, b: 0.35626924, a: 1}

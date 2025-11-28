@@ -23,9 +23,6 @@ MonoBehaviour:
   - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
     origin: {x: 3, y: 10}
     layerZ: 0
-  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
-    origin: {x: 1, y: 10}
-    layerZ: 0
   - def: {fileID: 11400000, guid: 3a842c2525d3f284689b59f96a34a487, type: 2}
     origin: {x: 1, y: 0}
     layerZ: 0
@@ -34,4 +31,13 @@ MonoBehaviour:
     layerZ: 0
   - def: {fileID: 11400000, guid: 8a4281acb5cca6e489a76fe37b87a0b0, type: 2}
     origin: {x: 3, y: 0}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 5, y: 10}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 3, y: 4}
+    layerZ: 0
+  - def: {fileID: 11400000, guid: 4676e07a4fd617242ae1e1af40339bb4, type: 2}
+    origin: {x: 7, y: 0}
     layerZ: 0
