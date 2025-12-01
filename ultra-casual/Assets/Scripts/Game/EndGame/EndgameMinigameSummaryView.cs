@@ -16,6 +16,7 @@ public class EndgameMinigameSummaryView : MonoBehaviour
     [Header("Targets Row (Dynamic)")]
     [Tooltip("Container where target icons will be spawned as children.")]
     public RectTransform targetsContainer;
+    public RectTransform prizesContainer;
 
     [Tooltip("Prefab for a single target icon Image. Will be instantiated as needed.")]
     public Image targetSlotPrefab;
@@ -60,6 +61,8 @@ public class EndgameMinigameSummaryView : MonoBehaviour
         {
             canvasGroup.alpha = 0f;
         }
+
+        //prizesContainer.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -125,6 +128,8 @@ public class EndgameMinigameSummaryView : MonoBehaviour
         if (chestOpenHandler != null && chestOpenHandler.prizeText != null)
         {
             chestOpenHandler.prizeText.gameObject.SetActive(false);
+            chestOpenHandler.prizeRect.gameObject.SetActive(false);
+
         }
 
         // ---------------------------

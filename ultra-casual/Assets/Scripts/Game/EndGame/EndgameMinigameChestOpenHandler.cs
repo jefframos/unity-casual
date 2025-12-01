@@ -304,12 +304,7 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
         // ---------------------------
         // Show prize label and coin rain
         // ---------------------------
-        if (prizeText != null)
-        {
-            prizeRect.gameObject.SetActive(true);
-            prizeText.gameObject.SetActive(true);
-            prizeText.text = "0";
-        }
+
 
         UniTask coinRainTask = UniTask.CompletedTask;
 
@@ -317,6 +312,14 @@ public class EndgameMinigameChestOpenHandler : MonoBehaviour
         // {
         //     coinRainTask = coinRainSpawner.PlayCoinRainAsync(token);
         // }
+
+
+        if (prizeText != null)
+        {
+            prizeRect.gameObject.SetActive(true);
+            prizeText.gameObject.SetActive(true);
+            prizeText.text = "0";
+        }
 
         if (prizeText != null && rewardCountDuration > 0f)
         {

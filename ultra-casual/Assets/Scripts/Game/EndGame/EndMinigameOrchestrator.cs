@@ -126,6 +126,8 @@ public class EndgameMinigameOrchestrator : MonoBehaviour
     [Header("Debug")]
     public bool debugLogs = false;
 
+    public UiCountdownPanel countdownPanel;
+
     // ------------------------------------------
     // Runtime
     // ------------------------------------------
@@ -309,6 +311,10 @@ public class EndgameMinigameOrchestrator : MonoBehaviour
         {
             bossLifeBar.SetNormalizedProgress(0f);
         }
+
+
+        var token = this.GetCancellationTokenOnDestroy();
+        await countdownPanel.PlayCountdownAsync(3, token);
 
         int finalReward = 0;
         bool bossKilled = false;
